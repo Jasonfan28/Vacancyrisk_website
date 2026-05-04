@@ -766,6 +766,17 @@
     <div class="callout-label">Key Finding</div>
     <p>Clean &amp; Seal dominates the label. The model will largely learn to predict which properties the city has already physically boarded up, plus catch earlier-stage signals for properties that have not yet reached that point.</p>
   </div>
+
+  <div class="figure-pair">
+    <div class="figure">
+      <img src="graphs/ovs_class_balance.png" alt="OVS class balance" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 1.1</span><p><strong>OVS class balance.</strong> Counts of OVS = 1 vs OVS = 0 across all parcels.</p></div>
+    </div>
+    <div class="figure">
+      <img src="graphs/ovs_combination_plot.png" alt="OVS source combinations" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 1.2</span><p><strong>OVS source combinations.</strong> How parcels distribute across the three label sources and their overlaps.</p></div>
+    </div>
+  </div>
 </section>
 
 <!-- STEP 2 -->
@@ -811,6 +822,37 @@
     <li><strong>Case 2, commercial false positive.</strong> A parking garage flagged by code <code>PM15-901.1</code>. The code applies to vacant property maintenance but parking lots can receive it without being vacant in the residential sense. This led directly to the parking filter in <code>03_3_Features.Rmd</code>.</li>
     <li><strong>Case 3, false negative.</strong> An OPA category 6 (Vacant Land) parcel with no violation, license, or C&amp;S signal. Genuinely vacant land is largely invisible to the three-source OVS definition, motivating treating land separately.</li>
   </ul>
+
+  <div class="figure-pair">
+    <div class="figure">
+      <img src="code/outputs/exteriorcondition.png" alt="Exterior condition by OVS" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 3.1</span><p><strong>Exterior condition by OVS.</strong> Vacant parcels skew heavily toward conditions 5&ndash;7.</p></div>
+    </div>
+    <div class="figure">
+      <img src="code/outputs/year_built.png" alt="Year built by OVS" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 3.2</span><p><strong>Year built by OVS.</strong> Vacant parcels tend to be older.</p></div>
+    </div>
+  </div>
+  <div class="figure-pair">
+    <div class="figure">
+      <img src="code/outputs/market_ovs.png" alt="Market value by OVS" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 3.3</span><p><strong>Market value by OVS.</strong> Vacant median ~$145K vs occupied ~$222K.</p></div>
+    </div>
+    <div class="figure">
+      <img src="code/outputs/opa_cat.png" alt="OPA category by OVS" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 3.4</span><p><strong>OPA category by OVS.</strong> Distribution of OVS by OPA building category.</p></div>
+    </div>
+  </div>
+  <div class="figure-pair">
+    <div class="figure">
+      <img src="code/outputs/zip_summary.png" alt="ZIP-level OVS rates" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 3.5</span><p><strong>ZIP-level OVS rates.</strong> Vacancy rates per ZIP range from ~0.3% to ~17%.</p></div>
+    </div>
+    <div class="figure">
+      <img src="code/outputs/vacant_parcels_map.png" alt="Vacant parcels map" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 3.6</span><p><strong>Vacant parcels map.</strong> Geographic clustering of OVS = 1 parcels.</p></div>
+    </div>
+  </div>
 </section>
 
 <!-- STEP 4 -->
@@ -856,6 +898,11 @@
   <div class="callout callout-blue">
     <div class="callout-label">Output</div>
     <p><code>data/ovs_residential.csv</code> &mdash; ~520K residential parcels (522,583 unique) with an OVS = 1 rate of about 1.1%.</p>
+  </div>
+
+  <div class="figure">
+    <img src="code/03_1_Ovs_files/figure-html/ovs-overlap-plot-1.png" alt="OVS source overlap on residential parcels" loading="lazy">
+    <div class="figure-caption"><span class="fig-num">Figure 4.1</span><p><strong>OVS source overlap on residential parcels.</strong> Same overlap analysis as Step 3, restricted to residential parcels after the category-code filter.</p></div>
   </div>
 </section>
 
@@ -918,6 +965,27 @@
     </table>
   </div>
   <p>Visible overlap in the predicted score density between OVS = 0 and OVS = 1 indicates room for improvement. <strong>Outputs:</strong> <code>data/building_tier_mapping.csv</code>, <code>data/vacancy_keyword_codes.csv</code>.</p>
+
+  <div class="figure-pair">
+    <div class="figure">
+      <img src="graphs/exterior_condition_vacancy_rate.png" alt="Vacancy rate by exterior condition" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 5.1</span><p><strong>Vacancy rate by exterior condition.</strong> Bar chart over the 1&ndash;7 ordered categorical scale.</p></div>
+    </div>
+    <div class="figure">
+      <img src="graphs/violations_faceted_by_ovs.png" alt="Violation history faceted by OVS" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 5.2</span><p><strong>Violation history faceted by OVS.</strong> Mean violation counts in 4 windows, OVS = 1 vs OVS = 0.</p></div>
+    </div>
+  </div>
+  <div class="figure-pair">
+    <div class="figure">
+      <img src="code/03_2_Analysis_files/figure-html/baseline-roc-1.png" alt="Baseline ROC curve" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 5.3</span><p><strong>Baseline ROC curve.</strong> Logistic regression on four OPA fields. AUC = 0.798.</p></div>
+    </div>
+    <div class="figure">
+      <img src="graphs/baseline_prob_distribution.png" alt="Baseline predicted probability distribution" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 5.4</span><p><strong>Baseline predicted probability distribution.</strong> Density of predicted scores by OVS class — visible overlap motivates the engineered features.</p></div>
+    </div>
+  </div>
 </section>
 
 <!-- STEP 6 -->
@@ -1038,6 +1106,11 @@ ovs_df &lt;- ovs_df %&gt;%
     <div class="callout-label">Output</div>
     <p><code>data/features_residential.csv</code> &mdash; ~520K parcels (522,481 unique) by 80+ columns.</p>
   </div>
+
+  <div class="figure">
+    <img src="graphs/univariate_correlation.png" alt="Top 20 univariate correlations with OVS" loading="lazy">
+    <div class="figure-caption"><span class="fig-num">Figure 6.1</span><p><strong>Top 20 univariate correlations with OVS.</strong> Quick sanity check that the strongest predictors are conceptually sensible.</p></div>
+  </div>
 </section>
 
 <!-- STEP 7 -->
@@ -1122,6 +1195,47 @@ ensemble_prob      = isotonic_ensemble.transform(ensemble_prob_raw)</pre>
     <li><code>ensemble_flag</code> &mdash; 1 = top one percent by raw rank. Use for operational triage.</li>
     <li><code>qtile_tier</code> &mdash; five-bucket rank for tier badges in UI ("Top 1%", etc.).</li>
   </ul>
+
+  <div class="figure-pair">
+    <div class="figure">
+      <img src="graphs/python/rose_subsampling_comparison.png" alt="SMOTE versus no subsampling" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 7.1</span><p><strong>SMOTE versus no subsampling.</strong> Class-balance lever before model fitting.</p></div>
+    </div>
+    <div class="figure">
+      <img src="graphs/python/overfit_check_density.png" alt="Train versus test density" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 7.2</span><p><strong>Train vs test density.</strong> Predicted-score density on each split — gap indicates overfit.</p></div>
+    </div>
+  </div>
+  <div class="figure-pair">
+    <div class="figure">
+      <img src="graphs/python/calibration_curve.png" alt="Calibration curve for the ensemble" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 7.3</span><p><strong>Calibration curve for the ensemble.</strong> Reliability after isotonic calibration.</p></div>
+    </div>
+    <div class="figure">
+      <img src="graphs/python/cal_vs_raw_distribution.png" alt="Calibrated versus raw probability distributions" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 7.4</span><p><strong>Calibrated vs raw distributions.</strong> Why the highest calibrated probability sits ~0.6, not 1.0.</p></div>
+    </div>
+  </div>
+  <div class="figure-pair">
+    <div class="figure">
+      <img src="graphs/python/roc_all_models.png" alt="ROC curves for all four base models" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 7.5</span><p><strong>ROC curves, all four base models.</strong> Logit, RF, XGBoost, LightGBM, plus the ensemble.</p></div>
+    </div>
+    <div class="figure">
+      <img src="graphs/python/rf_variable_importance.png" alt="Random Forest variable importance, top 20" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 7.6</span><p><strong>Random Forest top-20 variable importance.</strong> C&amp;S history and violation trajectories dominate.</p></div>
+    </div>
+  </div>
+  <div class="figure-pair">
+    <div class="figure">
+      <img src="graphs/python/threshold_sensitivity.png" alt="Threshold sensitivity precision and recall" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 7.7</span><p><strong>Threshold sensitivity.</strong> Precision and recall as the operating threshold sweeps.</p></div>
+    </div>
+    <div class="figure">
+      <img src="graphs/python/tier_distribution.png" alt="Five-tier probability distribution" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 7.8</span><p><strong>Five-tier probability distribution.</strong> Population shares per <code>qtile_tier</code> bucket.</p></div>
+    </div>
+  </div>
 </section>
 
 <!-- STEP 8 -->
@@ -1166,6 +1280,27 @@ ci_upper = np.clip(rf_prob + 1.96 * rf_se, 0, 1)</pre>
     <li><strong>Known-vacant holdout.</strong> Parcels with <code>cs_truly_active</code> score ~2.5&times; the no-signal group; parcels with a vacancy license ~4.5&times;.</li>
     <li><strong>Partial dependence.</strong> Predicted probability rises monotonically with violation count, as expected.</li>
   </ul>
+
+  <div class="figure-pair">
+    <div class="figure">
+      <img src="graphs/python/spatial_cv_performance.png" alt="Spatial CV per-fold AUC and J-Index" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 8.1</span><p><strong>Spatial CV per-fold AUC and J-Index.</strong> Variance across the 10 ZIP-grouped folds.</p></div>
+    </div>
+    <div class="figure">
+      <img src="graphs/python/logo_cv_by_zip.png" alt="LOGO AUC by held-out ZIP" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 8.2</span><p><strong>LOGO AUC by held-out ZIP.</strong> 15 sampled ZIPs, ranked.</p></div>
+    </div>
+  </div>
+  <div class="figure-pair">
+    <div class="figure">
+      <img src="graphs/python/prediction_ci_analysis.png" alt="Prediction confidence interval analysis" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 8.3</span><p><strong>Prediction CI analysis.</strong> RF tree-variance CI width vs predicted probability.</p></div>
+    </div>
+    <div class="figure">
+      <img src="graphs/python/rf_vip_04b.png" alt="04b feature importance reproduction" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 8.4</span><p><strong>04b feature importance.</strong> Sanity-check reproduction of 04a's RF VIP under spatial CV.</p></div>
+    </div>
+  </div>
 </section>
 
 <!-- STEP 9 -->
@@ -1234,6 +1369,27 @@ ci_upper = np.clip(rf_prob + 1.96 * rf_se, 0, 1)</pre>
     <div class="callout-label">Headline Equity Finding</div>
     <p>AUC is consistent across all income quintiles (0.968&ndash;0.978). The model identifies vacancy with the same ranking quality whether the parcel sits in a low-income or high-income tract. Mean predicted probability tracks observed rate closely in every quintile &mdash; the model is not systematically over- or under-predicting in any income band. It concentrates absolute flag counts in lower-income areas because vacancy is genuinely concentrated there.</p>
   </div>
+
+  <div class="figure-pair">
+    <div class="figure">
+      <img src="graphs/python/auc_by_zip.png" alt="AUC by ZIP code" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 9.1</span><p><strong>AUC by ZIP code.</strong> Per-ZIP discrimination, ranked. No ZIP falls below 0.70.</p></div>
+    </div>
+    <div class="figure">
+      <img src="graphs/python/equity_zip_scatter.png" alt="Equity flag rate vs observed vacancy by ZIP" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 9.2</span><p><strong>Equity scatter.</strong> Per-ZIP flag rate vs observed vacancy rate &mdash; alignment indicates calibration.</p></div>
+    </div>
+  </div>
+  <div class="figure-pair">
+    <div class="figure">
+      <img src="graphs/python/ward_mean_prob.png" alt="Mean predicted probability by ward" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 9.3</span><p><strong>Mean predicted probability by ward.</strong> Wards 11, 44, 28 lead.</p></div>
+    </div>
+    <div class="figure">
+      <img src="graphs/python/equity_income_quintile.png" alt="AUC by census-tract income quintile" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 9.4</span><p><strong>AUC by income quintile.</strong> 0.968&ndash;0.978 across Q1&ndash;Q5.</p></div>
+    </div>
+  </div>
 </section>
 
 <!-- STEP 10 -->
@@ -1275,6 +1431,31 @@ ci_upper = np.clip(rf_prob + 1.96 * rf_se, 0, 1)</pre>
 
   <h3>10.4 High-probability OVS = 0 candidates</h3>
   <p>A separate analysis isolates the top 339 parcels with the highest ensemble probability that have OVS = 0. Twenty-seven of those also appear in the City VPI &mdash; independent corroboration that the parcel is genuinely vacant despite OVS missing it. The remaining 312 are candidate false positives or genuinely undetected vacants and are exported with addresses for inspector review.</p>
+
+  <div class="figure">
+    <img src="graphs/python/vs_city_vpi_roc_pr.png" alt="Ensemble vs VPI ROC and PR curves" loading="lazy">
+    <div class="figure-caption"><span class="fig-num">Figure 10.1</span><p><strong>Ensemble vs City VPI &mdash; ROC and PR curves.</strong> Ensemble AUC 0.9786 vs VPI 0.7849.</p></div>
+  </div>
+  <div class="figure-pair">
+    <div class="figure">
+      <img src="graphs/python/vs_city_vpi_buckets.png" alt="Four-bucket disagreement summary" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 10.2</span><p><strong>Four-bucket disagreement.</strong> Both / model-only / VPI-only / neither, with observed OVS rates per bucket.</p></div>
+    </div>
+    <div class="figure">
+      <img src="graphs/python/vs_city_vpi_map.png" alt="Disagreement map snapshot" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 10.3</span><p><strong>Disagreement map.</strong> Spatial layout of model-only vs VPI-only flags.</p></div>
+    </div>
+  </div>
+  <div class="figure-pair">
+    <div class="figure">
+      <img src="graphs/python/vs_city_vpi_zip_scatter.png" alt="Per-ZIP precision scatter, ensemble vs VPI" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 10.4</span><p><strong>Per-ZIP precision, ensemble vs VPI.</strong> Above the diagonal = model wins. Ensemble wins ~30 of 41 ZIPs.</p></div>
+    </div>
+    <div class="figure">
+      <img src="graphs/python/vs_city_vpi_high_prob_ovs0_map.png" alt="High-probability OVS = 0 candidate map" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 10.5</span><p><strong>High-prob OVS = 0 candidates.</strong> Top 339 model-flagged parcels with OVS = 0 &mdash; candidates for inspector review.</p></div>
+    </div>
+  </div>
 </section>
 
 <!-- STEP 11 -->
@@ -1296,6 +1477,11 @@ ci_upper = np.clip(rf_prob + 1.96 * rf_se, 0, 1)</pre>
     </table>
   </div>
   <p>Both reliability curves follow the diagonal, but the recalibrated version stays closer across all probability bins. <strong>Practical takeaway:</strong> the original calibrator was already nearly correct &mdash; <code>ensemble_prob_v2</code> is the recommendation for production, but the substantive difference is small enough that consumers already on <code>ensemble_prob</code> do not need to migrate urgently.</p>
+
+  <div class="figure">
+    <img src="graphs/python/recalibration_reliability.png" alt="Reliability curve, original versus recalibrated" loading="lazy">
+    <div class="figure-caption"><span class="fig-num">Figure 11.1</span><p><strong>Reliability curve, original vs recalibrated.</strong> Recalibrated curve hugs the 45&deg; diagonal more tightly across all bins.</p></div>
+  </div>
 </section>
 
 <!-- STEP 12 -->
@@ -1322,6 +1508,17 @@ ci_upper = np.clip(rf_prob + 1.96 * rf_se, 0, 1)</pre>
 
   <h3>12.3 Per-ward precision scatter</h3>
   <p>City VPI precision on the x-axis, model precision on the y-axis. Some wards reach perfect or near-perfect precision under the model's flagging policy, while others land in the 0.3&ndash;0.5 range. The notebook flags wards where precision falls below a configurable threshold for individual review.</p>
+
+  <div class="figure-pair">
+    <div class="figure">
+      <img src="graphs/python/operational_precision_at_capacity.png" alt="Operational precision at one percent ward capacity" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 12.1</span><p><strong>Operational precision at 1% ward capacity.</strong> Per-ward precision under the capped per-ward policy.</p></div>
+    </div>
+    <div class="figure">
+      <img src="graphs/python/capacity_threshold_curve.png" alt="Capacity threshold curve" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 12.2</span><p><strong>Capacity vs threshold curve.</strong> Number of parcels flagged for any chosen threshold &mdash; lookup for ops teams.</p></div>
+    </div>
+  </div>
 </section>
 
 <!-- STEP 13 -->
@@ -1341,6 +1538,11 @@ ci_upper = np.clip(rf_prob + 1.96 * rf_se, 0, 1)</pre>
     <li><code>n_violations_5yr</code> &amp; <code>n_violations_3yr</code> &mdash; five and three year violation density.</li>
   </ul>
   <p>A useful pattern in the local explanations: some neighborhood-level features push downward at flagged parcels. A high count of vacant parcels in the same ZIP can lower the ensemble probability for a specific parcel &mdash; the model accounts for the neighborhood baseline elsewhere, so an individual parcel in a high-vacancy ZIP is comparatively less risky than a parcel that looks unusual within its ZIP.</p>
+
+  <div class="figure">
+    <img src="graphs/python/shap_summary_topflags.png" alt="Top SHAP drivers for flagged parcels" loading="lazy">
+    <div class="figure-caption"><span class="fig-num">Figure 13.1</span><p><strong>Top SHAP drivers across the top 200 flagged parcels.</strong> Mean absolute SHAP per feature.</p></div>
+  </div>
 </section>
 
 <!-- STEP 14 -->
@@ -1366,6 +1568,11 @@ ci_upper = np.clip(rf_prob + 1.96 * rf_se, 0, 1)</pre>
     </table>
   </div>
   <p>The model's discrimination is actually higher on the new cohort, where the recent administrative trail is rich. The Brier score on the new cohort is larger in absolute terms because prevalence is roughly 20&times; higher, but the calibration ratio is good. <strong>There is no evidence of temporal decay between the older and newer activity windows.</strong></p>
+
+  <div class="figure">
+    <img src="graphs/python/temporal_validation.png" alt="Temporal validation, old versus new cohort" loading="lazy">
+    <div class="figure-caption"><span class="fig-num">Figure 14.1</span><p><strong>Temporal validation, old vs new cohort.</strong> ROC curves and calibration on the two recency-defined cohorts.</p></div>
+  </div>
 </section>
 
 <!-- STEP 15 -->
@@ -1391,6 +1598,11 @@ ci_upper = np.clip(rf_prob + 1.96 * rf_se, 0, 1)</pre>
   <div class="callout callout-blue">
     <div class="callout-label">The Headline Number</div>
     <p>Block-CV mean AUC is <strong>0.9677 &plusmn; 0.0083</strong>. This sits between the random-split test AUC (0.9395) and the more aggressive ZIP-blocked CV (0.8877). Census-tract blocking is the right granularity for the operational story &mdash; the city does inspect and intervene at the tract level all the time. <strong>~0.97 is the right number to put on a stakeholder slide as the honest, leakage-controlled AUC for the Random Forest component.</strong></p>
+  </div>
+
+  <div class="figure">
+    <img src="graphs/python/block_cv_rf_aucs.png" alt="Block CV AUC by fold" loading="lazy">
+    <div class="figure-caption"><span class="fig-num">Figure 15.1</span><p><strong>Block CV AUC by fold.</strong> Five tract-grouped folds, mean AUC 0.9677 &plusmn; 0.0083.</p></div>
   </div>
 </section>
 
@@ -1424,6 +1636,37 @@ ci_upper = np.clip(rf_prob + 1.96 * rf_se, 0, 1)</pre>
 
   <h3>16.9 Optional GeoJSON exports</h3>
   <p>When parcel polygon geometry is available, two GeoJSON files are written: <code>vacancy_predictions.geojson</code> (~436K parcels, ~405 MB, all prediction columns plus all feature metadata) and <code>vacancy_predictions_flagged.geojson</code> (~4,500 parcels in the top one percent, ~3.9 MB).</p>
+
+  <div class="figure-pair">
+    <div class="figure">
+      <img src="graphs/python/prob_distribution_by_category.png" alt="Probability distribution by category" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 16.1</span><p><strong>Probability distribution by category.</strong> Density of <code>rf_prob</code> per OPA category, non-zero predictions only.</p></div>
+    </div>
+    <div class="figure">
+      <img src="graphs/python/mean_prob_by_category.png" alt="Mean predicted probability by category" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 16.2</span><p><strong>Mean predicted probability by category.</strong> Bars with observed OVS rate overlaid as red diamonds.</p></div>
+    </div>
+  </div>
+  <div class="figure-pair">
+    <div class="figure">
+      <img src="graphs/python/five_tier_distribution.png" alt="Five-tier distribution by category" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 16.3</span><p><strong>Five-tier distribution by category.</strong> Stacked bars using log-spaced breaks (No Signal&hellip;Very High).</p></div>
+    </div>
+    <div class="figure">
+      <img src="graphs/python/category_calibration.png" alt="Category calibration scatter" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 16.4</span><p><strong>Category calibration scatter.</strong> Mean predicted vs observed rate per category, point size by parcel count.</p></div>
+    </div>
+  </div>
+  <div class="figure-pair">
+    <div class="figure">
+      <img src="graphs/python/zip_mean_prob_bar.png" alt="Mean predicted probability by ZIP" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 16.5</span><p><strong>Mean predicted probability by ZIP.</strong> Bars + observed OVS rate as diamond markers.</p></div>
+    </div>
+    <div class="figure">
+      <img src="graphs/python/spatial_zip_choropleth.png" alt="ZCTA choropleth of mean P(vacant)" loading="lazy">
+      <div class="figure-caption"><span class="fig-num">Figure 16.6</span><p><strong>ZCTA choropleth of mean P(vacant).</strong> Static map for stakeholder summaries.</p></div>
+    </div>
+  </div>
 </section>
 
 <!-- STEP 17 -->
