@@ -855,7 +855,7 @@
   <p>Geometry is dropped on export since downstream files work with flat tables, but the parcel-level building description is retained for the secondary parking and commercial filter applied during feature engineering.</p>
   <div class="callout callout-blue">
     <div class="callout-label">Output</div>
-    <p><code>data/ovs_residential.csv</code> &mdash; about 352K residential parcels with an OVS = 1 rate of around 1.1%.</p>
+    <p><code>data/ovs_residential.csv</code> &mdash; ~520K residential parcels (522,583 unique) with an OVS = 1 rate of about 1.1%.</p>
   </div>
 </section>
 
@@ -1036,7 +1036,7 @@ ovs_df &lt;- ovs_df %&gt;%
   <p>A summary table reports each feature's missing-value count and percentage. The highest-missing features are <code>days_oldest_open_viol</code> (only populated for parcels with open violations) and price-related fields with fewer than two transactions. Pearson correlations between each numeric feature and <code>ovs</code> are computed and the top 20 are plotted as a sanity check.</p>
   <div class="callout callout-blue">
     <div class="callout-label">Output</div>
-    <p><code>data/features_residential.csv</code> &mdash; about 352K parcels by 80+ columns.</p>
+    <p><code>data/features_residential.csv</code> &mdash; ~520K parcels (522,481 unique) by 80+ columns.</p>
   </div>
 </section>
 
