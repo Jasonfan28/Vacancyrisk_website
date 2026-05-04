@@ -376,11 +376,14 @@
       <p>An interactive map of predicted vacancy risk scores for residential parcels across Philadelphia. The ward choropleth shows average risk by ward; zoom to level 13+ for individual parcel risk colors.</p>
       <h5>Model performance</h5>
       <div class="metric-row">
-        <div class="metric-chip">AUC <strong>0.901</strong></div>
-        <div class="metric-chip">Sensitivity <strong>82.7%</strong></div>
-        <div class="metric-chip">Specificity <strong>93.6%</strong></div>
+        <div class="metric-chip">AUC <strong>0.940</strong></div>
+        <div class="metric-chip">Sensitivity <strong>84.0%</strong></div>
+        <div class="metric-chip">Specificity <strong>89.8%</strong></div>
         <div class="metric-chip">Parcels scored <strong>~436K</strong></div>
       </div>
+      <p style="font-size:11px;color:var(--muted);margin-top:6px;">
+        Calibrated 50/50 Logit + Random Forest ensemble. Reported on a stratified 30% test holdout at the Youden-optimal threshold. Block-CV (5-fold by census tract) AUC is <strong>0.968</strong>; ZIP-grouped CV AUC is <strong>0.888</strong>.
+      </p>
       <h5>Data sources</h5>
       <ul>
         <li>OPA Properties Public — <em>OpenDataPhilly</em></li>
