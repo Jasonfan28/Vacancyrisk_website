@@ -159,6 +159,22 @@
   .popup-atlas-link { display:block; text-align:center; margin-top:10px; padding:7px; background:var(--blue-pale); border-radius:2px; font-size:11px; font-weight:700; font-family:var(--font-head); color:var(--blue-dark); text-decoration:none; border:1px solid var(--blue-light); transition:background .15s; }
   .popup-atlas-link:hover { background:var(--blue-light); }
 
+  /* SHAP drivers in popup */
+  .shap-list { display:flex; flex-direction:column; gap:4px; }
+  .shap-row { display:grid; grid-template-columns:1fr auto auto; align-items:center; gap:8px; font-size:11px; padding:4px 6px; border-radius:2px; background:var(--surface); }
+  .shap-row.up { border-left:2px solid var(--red); }
+  .shap-row.down { border-left:2px solid var(--blue-mid); }
+  .shap-feat { font-family:var(--font-mono,'Courier New',monospace); font-size:10px; color:var(--blue-dark); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .shap-feat .shap-feat-val { color:var(--muted); font-weight:400; margin-left:4px; }
+  .shap-arrow { font-size:11px; line-height:1; }
+  .shap-arrow.up { color:var(--red); }
+  .shap-arrow.down { color:var(--blue-mid); }
+  .shap-mag-wrap { width:54px; height:6px; background:rgba(0,0,0,0.05); border-radius:2px; overflow:hidden; position:relative; }
+  .shap-mag-bar { position:absolute; top:0; bottom:0; left:0; }
+  .shap-mag-bar.up { background:var(--red); }
+  .shap-mag-bar.down { background:var(--blue-mid); }
+  .shap-empty { font-size:11px; color:var(--muted); font-style:italic; padding:4px 0; }
+
   /* ABOUT MODAL */
   .modal-overlay { display:none; position:fixed; inset:0; background:rgba(8,32,68,.55); z-index:3000; align-items:center; justify-content:center; padding:24px; }
   .modal-overlay.open { display:flex; }
@@ -237,9 +253,9 @@
       </div>
     </div>
 
-    <!-- City Summary -->
+    <!-- Ward Summary -->
     <div class="sidebar-section">
-      <h3>City Summary</h3>
+      <h3>Ward Summary</h3>
       <div class="stat-grid">
         <div class="stat-card">
           <div class="val" id="val-total">—</div>
@@ -282,6 +298,29 @@
       <h3>Filter by Ward</h3>
       <button class="clear-btn" id="ward-clear">Show All Wards</button>
       <div class="filter-btn-wrap" id="ward-list"></div>
+    </div>
+
+    <!-- Risk Level Filter -->
+    <div class="sidebar-section">
+      <h3>Filter by Risk Level</h3>
+      <button class="clear-btn" id="risk-clear">Show All Risk Levels</button>
+      <div style="display:flex;flex-direction:column;gap:5px;">
+      <button class="wd-btn" id="risk-top1" data-tier="Top 1% (highest risk)">
+        <span style="display:inline-block;width:10px;height:10px;background:#7f0000;border-radius:2px;margin-right:6px;"></span>Top 1% (Highest Risk)
+      </button>
+      <button class="wd-btn" id="risk-p95" data-tier="95–99%">
+        <span style="display:inline-block;width:10px;height:10px;background:#cc3000;border-radius:2px;margin-right:6px;"></span>95–99%
+      </button>
+      <button class="wd-btn" id="risk-p90" data-tier="90–95%">
+        <span style="display:inline-block;width:10px;height:10px;background:#f3c613;border-radius:2px;margin-right:6px;"></span>90–95%
+      </button>
+      <button class="wd-btn" id="risk-p75" data-tier="75–90%">
+        <span style="display:inline-block;width:10px;height:10px;background:#96c9ff;border-radius:2px;margin-right:6px;"></span>75–90%
+      </button>
+      <button class="wd-btn" id="risk-bottom" data-tier="Bottom 75% (lowest risk)">
+        <span style="display:inline-block;width:10px;height:10px;background:#daedfe;border:1px solid #96c9ff;border-radius:2px;margin-right:6px;"></span>Bottom 75%
+      </button>
+      </div>
     </div>
 
     <!-- Census Tract Filter -->
@@ -337,16 +376,21 @@
       <p>An interactive map of predicted vacancy risk scores for residential parcels across Philadelphia. The ward choropleth shows average risk by ward; zoom to level 13+ for individual parcel risk colors.</p>
       <h5>Model performance</h5>
       <div class="metric-row">
-        <div class="metric-chip">AUC <strong>0.901</strong></div>
-        <div class="metric-chip">Sensitivity <strong>82.7%</strong></div>
-        <div class="metric-chip">Specificity <strong>93.6%</strong></div>
-        <div class="metric-chip">Parcels scored <strong>~436K</strong></div>
+        <div class="metric-chip">AUC <strong>0.940</strong></div>
+        <div class="metric-chip">Sensitivity <strong>84.0%</strong></div>
+        <div class="metric-chip">Specificity <strong>89.8%</strong></div>
+        <div class="metric-chip">Parcels scored <strong>~520K</strong></div>
       </div>
+      <p style="font-size:11px;color:var(--muted);margin-top:6px;">
+        Calibrated 50/50 Logit + Random Forest ensemble. Reported on a stratified 30% test holdout at the Youden-optimal threshold. Block-CV (5-fold by census tract) AUC is <strong>0.968</strong>; ZIP-grouped CV AUC is <strong>0.888</strong>.
+      </p>
       <h5>Data sources</h5>
       <ul>
         <li>OPA Properties Public — <em>OpenDataPhilly</em></li>
-        <li>L&amp;I Violations — <em>OpenDataPhilly</em></li>
-        <li>PWD Parcel geometries — <em>OpenDataPhilly</em></li>
+        <li>L&amp;I Violations &amp; Clean &amp; Seal — <em>OpenDataPhilly</em></li>
+        <li>L&amp;I Business Licenses — <em>OpenDataPhilly</em></li>
+        <li>RTT Summary (deed history) — <em>Philadelphia Revenue</em></li>
+        <li>Vacant Property Indicator (VPI) — <em>City of Philadelphia</em></li>
       </ul>
       <div class="disclaimer-box">
         <div class="disc-head">&#9888;&#65039; Experimental — Student Research Project</div>
@@ -365,21 +409,56 @@
 <script>
 'use strict';
 
-const TILESERVER  = 'http://127.0.0.1:5001';
-const PMTILES_URL = 'http://127.0.0.1:5501/vacancy_predictions.pmtiles';
+// ── Endpoints ─────────────────────────────────────────────────
+// Local dev: tileserver.py on :5001 + a static server on :5501.
+// On GitHub Pages (or any static host) those won't exist; we fall back to
+// same-origin static files automatically.
+const IS_LOCAL = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+const TILESERVER  = IS_LOCAL ? 'http://127.0.0.1:5001' : '';
+// Local dev: martin (or any range-aware static server) on :5501.
+// Anywhere else (GitHub Pages, S3, etc.): same-origin relative URL — Pages
+// supports HTTP range requests natively.
+const PMTILES_URL = IS_LOCAL
+  ? 'http://127.0.0.1:5501/vacancy_predictions.pmtiles'
+  : new URL('vacancy_predictions.pmtiles', window.location.href).toString();
+
+// Static fallback cache (loaded lazily). When TILESERVER is unreachable we
+// serve from these instead.
+let _wardBoundsCache = null;     // { ward: {minlat,minlng,maxlat,maxlng} }
+let _staticWardStats = null;     // array of {ward,total,flagged,mean_prob,...}
+let _shapData        = null;     // { parcel_number: [{feature,value,shap,direction}, ...] }
+
+// fetch with a short timeout; resolves to null on failure
+function tryFetch(url, timeoutMs = 2500) {
+  if (!url) return Promise.resolve(null);
+  return new Promise(resolve => {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), timeoutMs);
+    fetch(url, { signal: ctrl.signal })
+      .then(r => { clearTimeout(t); return r.ok ? r.json() : null; })
+      .then(j => resolve(j))
+      .catch(() => { clearTimeout(t); resolve(null); });
+  });
+}
 
 // ── PMTiles protocol ──────────────────────────────────────────
 const protocol = new pmtiles.Protocol();
-maplibregl.addProtocol('pmtiles', protocol.tile.bind(protocol));
+maplibregl.addProtocol('pmtiles', protocol.tile);
+const p = new pmtiles.PMTiles(PMTILES_URL);
+protocol.add(p);
 
 // ── State ─────────────────────────────────────────────────────
 let activeWard  = null;
 let activeTract = null;
+let activeRisk  = null;
 let allTracts   = [];
 let wardChart   = null;
+let allWardStats = {};
 
 // ── Map ───────────────────────────────────────────────────────
-const map = new maplibregl.Map({
+let map;
+p.getHeader().then(() => {
+map = new maplibregl.Map({
   container: 'map',
   style: {
     version: 8,
@@ -477,6 +556,7 @@ map.on('load', () => {
   loadSummary();
   loadWards();
   loadTracts();
+  loadShap();
 
   // Map mode badge
   map.on('zoom', updateMapModeBadge);
@@ -505,64 +585,131 @@ function updateMapModeBadge() {
 
 // ── Ward choropleth ───────────────────────────────────────────
 const CHORO = ['#ffffb2','#fecc5c','#fd8d3c','#f03b20','#bd0026'];
-function choroColor(flagged, total) {
-  const r = total > 0 ? flagged/total : 0;
-  return r >= 0.04 ? CHORO[4] : r >= 0.025 ? CHORO[3] : r >= 0.015 ? CHORO[2] : r >= 0.005 ? CHORO[1] : CHORO[0];
+function choroColor(flagged, total, mean_prob) {
+  const p = mean_prob || 0;
+  return p >= 0.08 ? CHORO[4] : p >= 0.05 ? CHORO[3] : p >= 0.03 ? CHORO[2] : p >= 0.01 ? CHORO[1] : CHORO[0];
 }
 
 async function loadWardChoro() {
   try {
-    const stats = await fetch(`${TILESERVER}/ward_stats`).then(r => r.json());
-    const features = await Promise.all(stats.map(async w => {
-      const b = await fetch(`${TILESERVER}/ward_bounds?ward=${w.ward}`).then(r => r.json());
-      if (!b.minlat) return null;
+    const [stats, geoData] = await Promise.all([
+      fetch('ward_stats.json').then(r => r.json()),
+      fetch('ward_boundaries.geojson').then(r => r.json())
+    ]);
+
+    _staticWardStats = stats;          // cached for static-mode fallbacks
+
+    // ward statistics lookup
+    const statMap = {};
+    stats.forEach(w => { statMap[String(w.ward)] = w; });
+
+    // attach color to every ward boundary, and cache bounds for fly-to
+    _wardBoundsCache = {};
+    const features = geoData.features.map(f => {
+      const wardNum = String(parseInt(f.properties.ward_num) || '');
+      const stat = statMap[wardNum] || { flagged: 0, total: 0 };
+      _wardBoundsCache[wardNum] = computeBoundsFromGeometry(f.geometry);
       return {
-        type: 'Feature',
-        properties: { ward: w.ward, flagged: w.flagged, total: w.total, color: choroColor(w.flagged, w.total) },
-        geometry: { type: 'Polygon', coordinates: [[[b.minlng,b.minlat],[b.maxlng,b.minlat],[b.maxlng,b.maxlat],[b.minlng,b.maxlat],[b.minlng,b.minlat]]] }
+        ...f,
+        properties: {
+          ...f.properties,
+          ward: wardNum,
+          flagged: stat.flagged,
+          total: stat.total,
+          color: choroColor(stat.flagged, stat.total, stat.mean_prob)
+        }
       };
-    }));
-    map.getSource('ward-choro').setData({ type: 'FeatureCollection', features: features.filter(Boolean) });
+    });
+
+    map.getSource('ward-choro').setData({ type: 'FeatureCollection', features });
   } catch(e) { console.warn('Ward choro failed:', e); }
+}
+
+// Bounding-box helper — walks any (Multi)Polygon coord array
+function computeBoundsFromGeometry(geom) {
+  let minlat = 90, minlng = 180, maxlat = -90, maxlng = -180;
+  const walk = (a) => {
+    if (typeof a[0] === 'number') {
+      const [lng, lat] = a;
+      if (lng < minlng) minlng = lng; if (lng > maxlng) maxlng = lng;
+      if (lat < minlat) minlat = lat; if (lat > maxlat) maxlat = lat;
+    } else { a.forEach(walk); }
+  };
+  if (geom && geom.coordinates) walk(geom.coordinates);
+  return { minlat, minlng, maxlat, maxlng };
+}
+
+// Load SHAP attributions for popup drivers (one static JSON, ~100 KB)
+async function loadShap() {
+  try {
+    const j = await fetch('dashboard_shap.json').then(r => r.json());
+    _shapData = j.shap_by_parcel || {};
+  } catch(e) { console.warn('SHAP load failed:', e); _shapData = {}; }
 }
 
 // ── Summary ───────────────────────────────────────────────────
 async function loadSummary() {
-  try {
-    const d = await fetch(`${TILESERVER}/summary`).then(r => r.json());
-    const total   = d.total_parcels || 0;
-    const flagged = d.total_flagged || 0;
-    document.getElementById('val-total').textContent   = (total/1000).toFixed(0) + 'K';
-    document.getElementById('val-flagged').textContent = flagged.toLocaleString();
-    document.getElementById('val-ovs').textContent     = d.observed_vacant > 0 ? (d.observed_vacant/total*100).toFixed(1)+'%' : 'N/A';
-    document.getElementById('val-rate').textContent    = ((flagged/total)*100).toFixed(2)+'%';
-  } catch(e) { console.warn('Summary failed:', e); }
+  let d = TILESERVER ? await tryFetch(`${TILESERVER}/summary`) : null;
+  // Static fallback: aggregate ward_stats.json
+  if (!d) {
+    if (!_staticWardStats) {
+      _staticWardStats = await tryFetch('ward_stats.json') || [];
+    }
+    const total = _staticWardStats.reduce((s,w) => s + (w.total||0), 0);
+    const flagged = _staticWardStats.reduce((s,w) => s + (w.flagged||0), 0);
+    const obs = _staticWardStats.reduce((s,w) => s + (w.observed_vacant||0), 0);
+    d = { total_parcels: total, total_flagged: flagged, observed_vacant: obs };
+  }
+  const total   = d.total_parcels || 0;
+  const flagged = d.total_flagged || 0;
+  document.getElementById('val-total').textContent   = total ? (total/1000).toFixed(0) + 'K' : '—';
+  document.getElementById('val-flagged').textContent = flagged.toLocaleString();
+  document.getElementById('val-ovs').textContent     = d.observed_vacant > 0 ? (d.observed_vacant/total*100).toFixed(1)+'%' : 'N/A';
+  document.getElementById('val-rate').textContent    = total ? ((flagged/total)*100).toFixed(2)+'%' : '—';
+}
+
+function updateSummaryCards(total, flagged, ovs, label) {
+  document.getElementById('val-total').textContent = total >= 1000 ? (total/1000).toFixed(1)+'K' : total;
+  document.getElementById('val-flagged').textContent = flagged.toLocaleString();
+  document.getElementById('val-ovs').textContent = ovs > 0 ? (ovs/total*100).toFixed(1)+'%' : 'N/A';
+  document.getElementById('val-rate').textContent = ((flagged/total)*100).toFixed(2)+'%';
 }
 
 // ── Ward filter ───────────────────────────────────────────────
 async function loadWards() {
-  try {
-    const wards = await fetch(`${TILESERVER}/wards`).then(r => r.json());
-    const container = document.getElementById('ward-list');
-    wards.forEach(w => {
-      const btn = document.createElement('button');
-      btn.className = 'wd-btn';
-      btn.textContent = 'Wd ' + w.ward;
-      btn.dataset.ward = w.ward;
-      btn.title = `Ward ${w.ward} — ${w.flagged} flagged / ${w.total} total`;
-      btn.addEventListener('click', () => selectWard(w.ward, btn));
-      container.appendChild(btn);
-    });
-
-    const top10 = [...wards].sort((a,b) => b.flagged - a.flagged).slice(0, 10);
-    renderWardChart(top10);
-  } catch(e) { console.warn('Wards failed:', e); }
+  let wards = TILESERVER ? await tryFetch(`${TILESERVER}/wards`) : null;
+  if (!wards) {
+    // Static fallback uses ward_stats.json (already loaded by loadWardChoro)
+    if (!_staticWardStats) {
+      _staticWardStats = await tryFetch('ward_stats.json') || [];
+    }
+    wards = _staticWardStats.map(w => ({
+      ward: w.ward, total: w.total || 0,
+      flagged: w.flagged || 0,
+      observed_vacant: w.observed_vacant || 0,
+      mean_prob: w.mean_prob || 0,
+    }));
+  }
+  wards.forEach(w => { allWardStats[w.ward] = w; });
+  const container = document.getElementById('ward-list');
+  wards.forEach(w => {
+    const btn = document.createElement('button');
+    btn.className = 'wd-btn';
+    btn.textContent = 'Wd ' + w.ward;
+    btn.dataset.ward = w.ward;
+    btn.title = `Ward ${w.ward} — ${w.flagged} flagged / ${w.total} total`;
+    btn.addEventListener('click', () => selectWard(w.ward, btn));
+    container.appendChild(btn);
+  });
+  const top10 = [...wards].sort((a,b) => b.flagged - a.flagged).slice(0, 10);
+  renderWardChart(top10);
 }
 
 document.getElementById('ward-clear').addEventListener('click', () => {
   activeWard = null;
   document.querySelectorAll('#ward-list .wd-btn').forEach(b => b.classList.remove('active'));
   updateFilter();
+  loadSummary();
 });
 
 function selectWard(ward, btn) {
@@ -572,16 +719,54 @@ function selectWard(ward, btn) {
   document.querySelectorAll('#tract-list .wd-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   updateFilter();
-  fetch(`${TILESERVER}/ward_bounds?ward=${ward}`)
-    .then(r => r.json())
-    .then(b => { if (b.minlat) map.fitBounds([[b.minlng,b.minlat],[b.maxlng,b.maxlat]], {padding:50}); });
+
+  // 更新 summary 显示该 ward 的数据
+  const w = allWardStats[ward];
+  if (w) updateSummaryCards(w.total, w.flagged, w.observed_vacant, `Ward ${ward}`);
+
+  // Prefer tileserver bounds; fall back to client-computed bounds from the
+  // ward boundaries GeoJSON (always available, no backend needed).
+  (TILESERVER ? tryFetch(`${TILESERVER}/ward_bounds?ward=${ward}`) : Promise.resolve(null))
+    .then(b => {
+      if (!b || !b.minlat) b = (_wardBoundsCache || {})[String(ward)];
+      if (b && b.minlat) map.fitBounds([[b.minlng,b.minlat],[b.maxlng,b.maxlat]], {padding:50});
+    });
 }
+
+// ── Risk Level filter ─────────────────────────────────────────
+document.querySelectorAll('[data-tier]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tier = btn.dataset.tier;
+    if (activeRisk === tier) {
+      activeRisk = null;
+      btn.classList.remove('active');
+    } else {
+      activeRisk = tier;
+      document.querySelectorAll('[data-tier]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+    updateFilter();
+  });
+});
+
+document.getElementById('risk-clear').addEventListener('click', () => {
+  activeRisk = null;
+  document.querySelectorAll('[data-tier]').forEach(b => b.classList.remove('active'));
+  updateFilter();
+});
 
 // ── Census tract filter ───────────────────────────────────────
 async function loadTracts() {
-  try {
-    allTracts = await fetch(`${TILESERVER}/census_tracts`).then(r => r.json());
-  } catch(e) { console.warn('Tracts failed:', e); }
+  if (TILESERVER) {
+    const j = await tryFetch(`${TILESERVER}/census_tracts`);
+    if (j) { allTracts = j; return; }
+  }
+  // Static fallback: try a precomputed file, else leave empty (UI handles it)
+  allTracts = await tryFetch('census_tracts.json') || [];
+  if (!allTracts.length) {
+    const search = document.getElementById('tract-search');
+    if (search) search.placeholder = 'Tract search needs local server';
+  }
 }
 
 document.getElementById('tract-search').addEventListener('input', function() {
@@ -614,26 +799,34 @@ function selectTract(tract, btn) {
   document.querySelectorAll('#tract-list .wd-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   updateFilter();
-  fetch(`${TILESERVER}/tract_bounds?census_tract=${tract}`)
-    .then(r => r.json())
-    .then(b => { if (b.minlat) map.fitBounds([[b.minlng,b.minlat],[b.maxlng,b.maxlat]], {padding:50}); });
+  (TILESERVER ? tryFetch(`${TILESERVER}/tract_bounds?census_tract=${tract}`) : Promise.resolve(null))
+    .then(b => { if (b && b.minlat) map.fitBounds([[b.minlng,b.minlat],[b.maxlng,b.maxlat]], {padding:50}); });
 }
 
 // ── MapLibre filter ───────────────────────────────────────────
 function updateFilter() {
-  let fillOpacity, lineOpacity;
+  let filters = [];
+
   if (activeWard) {
-    const f = ['==', ['to-string', ['get', 'geographic_ward']], activeWard];
-    fillOpacity = ['interpolate', ['linear'], ['zoom'], 12, 0, 13, ['case', f, probOpacity, 0]];
-    lineOpacity = ['case', f, 0.5, 0];
-  } else if (activeTract) {
-    const f = ['==', ['to-string', ['get', 'census_tract']], activeTract];
-    fillOpacity = ['interpolate', ['linear'], ['zoom'], 12, 0, 13, ['case', f, probOpacity, 0]];
-    lineOpacity = ['case', f, 0.5, 0];
+    filters.push(['==', ['to-string', ['get', 'geographic_ward']], activeWard]);
+  }
+  if (activeTract) {
+    filters.push(['==', ['to-string', ['get', 'census_tract']], activeTract]);
+  }
+  if (activeRisk) {
+    filters.push(['==', ['get', 'qtile_tier'], activeRisk]);
+  }
+
+  let fillOpacity, lineOpacity;
+  if (filters.length > 0) {
+    const combined = filters.length === 1 ? filters[0] : ['all', ...filters];
+    fillOpacity = ['interpolate', ['linear'], ['zoom'], 12, 0, 13, ['case', combined, probOpacity, 0]];
+    lineOpacity = ['case', combined, 0.5, 0];
   } else {
     fillOpacity = ['interpolate', ['linear'], ['zoom'], 12, 0, 13, probOpacity];
     lineOpacity = 0.5;
   }
+
   map.setPaintProperty('parcel-fill', 'fill-opacity', fillOpacity);
   map.setPaintProperty('parcel-line', 'line-opacity', lineOpacity);
 }
@@ -647,6 +840,42 @@ function riskClass(prob) {
   if (prob >= 0.4) return { label: 'Medium Risk',    cls: 'badge-medium' };
   if (prob >= 0.2) return { label: 'Low Risk',       cls: 'badge-low' };
   return               { label: 'Very Low Risk',  cls: 'badge-very-low' };
+}
+
+// Pretty-print a feature value: integers stay int, floats trim, strings pass through
+function fmtShapValue(v) {
+  if (v === null || v === undefined || v === '') return '';
+  const n = Number(v);
+  if (Number.isFinite(n)) {
+    if (Number.isInteger(n)) return n.toLocaleString();
+    return n.toFixed(2).replace(/\.?0+$/, '');
+  }
+  return String(v);
+}
+
+// Build the "Top Risk Drivers" SHAP block; empty string if no SHAP data
+// for this parcel so existing popup layout is unchanged.
+function buildShapSection(parcelNumber) {
+  if (!_shapData) return '';                   // not loaded yet
+  const rows = _shapData[String(parcelNumber)];
+  if (!rows || !rows.length) return '';        // not in the SHAP-explained subset
+  const maxAbs = Math.max(...rows.map(r => Math.abs(r.shap || 0))) || 1;
+  const items = rows.slice(0, 5).map(r => {
+    const isUp = (r.direction === 'pushed up') || (r.shap > 0);
+    const dirCls = isUp ? 'up' : 'down';
+    const pct = Math.min(100, Math.round((Math.abs(r.shap || 0) / maxAbs) * 100));
+    const arrow = isUp ? '&#9650;' : '&#9660;';
+    const valDisplay = fmtShapValue(r.value);
+    return `
+      <div class="shap-row ${dirCls}">
+        <span class="shap-feat">${r.feature}${valDisplay ? `<span class="shap-feat-val">= ${valDisplay}</span>` : ''}</span>
+        <span class="shap-arrow ${dirCls}">${arrow}</span>
+        <span class="shap-mag-wrap"><span class="shap-mag-bar ${dirCls}" style="width:${pct}%;"></span></span>
+      </div>`;
+  }).join('');
+  return `
+    <div class="popup-section-label">Top Risk Drivers (SHAP)</div>
+    <div class="shap-list">${items}</div>`;
 }
 
 function buildPopup(p) {
@@ -686,6 +915,7 @@ function buildPopup(p) {
         <div class="ovs-item">XGBoost flagged: <b>${p.xgb_flag ? 'Yes' : 'No'}</b></div>
         <div class="ovs-item">LightGBM flagged: <b>${p.lgb_flag ? 'Yes' : 'No'}</b></div>
       </div>
+      ${buildShapSection(p.parcel_number)}
       <a class="popup-atlas-link" href="https://atlas.phila.gov/#/${p.parcel_number}" target="_blank" rel="noopener">
         View on Atlas Phila &#8599;
       </a>
@@ -698,6 +928,7 @@ map.on('click', 'parcel-fill', e => {
 });
 map.on('mouseenter', 'parcel-fill', () => { map.getCanvas().style.cursor = 'pointer'; });
 map.on('mouseleave', 'parcel-fill', () => { map.getCanvas().style.cursor = ''; });
+}); // end p.getHeader().then
 
 // ── Search ────────────────────────────────────────────────────
 document.getElementById('search-btn').addEventListener('click', doSearch);
@@ -706,9 +937,45 @@ document.getElementById('search-input').addEventListener('keydown', e => { if (e
 async function doSearch() {
   const q = document.getElementById('search-input').value.trim();
   if (!q) return;
+  const box = document.getElementById('search-results');
+  // No backend = no cross-viewport search. Try in-view parcels via vector tiles.
+  if (!TILESERVER) {
+    const feats = map.queryRenderedFeatures({ layers: ['parcel-fill'] })
+      .filter(f => String(f.properties.parcel_number || '').includes(q))
+      .slice(0, 5)
+      .map(f => {
+        const c = f.geometry.coordinates;
+        // crude centroid for the popup anchor
+        let lat = 0, lng = 0, n = 0;
+        const walk = (a) => { if (typeof a[0] === 'number') { lng += a[0]; lat += a[1]; n++; } else a.forEach(walk); };
+        walk(c);
+        return { ...f.properties, lat: lat/n, lng: lng/n };
+      });
+    if (!feats.length) {
+      box.innerHTML = `<div class="sri"><div class="sri-parcel">No matches in view</div><div class="sri-meta">Zoom in &amp; pan to the area, then search again</div></div>`;
+      box.style.display = 'block';
+      return;
+    }
+    box.innerHTML = feats.map(p => `
+      <div class="sri" data-lat="${p.lat}" data-lng="${p.lng}" data-p='${JSON.stringify(p)}'>
+        <div class="sri-parcel">${p.parcel_number}</div>
+        <div class="sri-meta">${p.qtile_tier||''} · Ward ${p.geographic_ward||'N/A'} · ZIP ${p.zip_code||'N/A'}</div>
+      </div>`).join('');
+    box.style.display = 'block';
+    box.querySelectorAll('.sri').forEach(el => {
+      el.addEventListener('click', () => {
+        const p = JSON.parse(el.dataset.p);
+        const lat = parseFloat(el.dataset.lat), lng = parseFloat(el.dataset.lng);
+        map.flyTo({ center: [lng, lat], zoom: 16 });
+        popup.setLngLat([lng, lat]).setHTML(buildPopup(p)).addTo(map);
+        box.style.display = 'none';
+        document.getElementById('search-input').value = p.parcel_number;
+      });
+    });
+    return;
+  }
   try {
     const results = await fetch(`${TILESERVER}/search?q=${encodeURIComponent(q)}`).then(r => r.json());
-    const box = document.getElementById('search-results');
     if (!results.length) { box.style.display = 'none'; return; }
     box.innerHTML = results.map(p => `
       <div class="sri" data-lat="${p.lat}" data-lng="${p.lng}" data-p='${JSON.stringify(p)}'>

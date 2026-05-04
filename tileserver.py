@@ -75,10 +75,10 @@ def search():
                    ST_Y(ST_Centroid(wkb_geometry)) AS lat,
                    ST_X(ST_Centroid(wkb_geometry)) AS lng
             FROM vacancy_predictions
-            WHERE parcel_number ILIKE %s
+            WHERE parcel_number ILIKE %s OR address ILIKE %s
             ORDER BY ensemble_prob DESC
             LIMIT 5
-        """, (f'%{q}%',))
+        """, (f'%{q}%', f'%{q}%'))
         rows = cur.fetchall()
         cur.close()
         conn.close()
@@ -100,7 +100,8 @@ def wards():
         cur = conn.cursor()
         cur.execute("""
             SELECT geographic_ward::int, COUNT(*) AS total,
-                   SUM(ensemble_flag) AS flagged
+                   SUM(ensemble_flag) AS flagged,
+                   SUM(ovs) AS observed_vacant
             FROM vacancy_predictions
             WHERE geographic_ward IS NOT NULL
             GROUP BY geographic_ward::int
@@ -109,7 +110,11 @@ def wards():
         rows = cur.fetchall()
         cur.close()
         conn.close()
-        return jsonify([{'ward': r[0], 'total': r[1], 'flagged': int(r[2]) if r[2] else 0} for r in rows])
+        return jsonify([{
+            'ward': r[0], 'total': r[1],
+            'flagged': int(r[2]) if r[2] else 0,
+            'observed_vacant': int(r[3]) if r[3] else 0
+        } for r in rows])
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
