@@ -82,10 +82,10 @@ cat("violations:", comma(nrow(violations)), "\n")
 
 Constructs the violation code tier table (108 codes) for feature engineering.
 
-VacancyGuide2026 has three tiers（+1/+2/+3), totalling 108 codes。
+VacancyGuide2026 has three tiers (+1/+2/+3), totalling 108 codes.
 
-**note（Fichman feedback, 2026-02-18）：**
-Tier weights were established via trial-and-error without statistical validation. （Tim Haynes at 1/27 kickoff meeting). 
+**Note (Fichman feedback, 2026-02-18):**
+Tier weights were established via trial-and-error without statistical validation (Tim Haynes at 1/27 kickoff meeting).
 
 We use these tiers for for Track B comparison rather than primary predictors.
 
@@ -140,9 +140,9 @@ guide_land <- c(
 
 building_all <- c(guide_level1, guide_level2, guide_level3)
 
-cat("Level 1 (+1分):", length(guide_level1), "codes\n")
-cat("Level 2 (+2分):", length(guide_level2), "codes\n")
-cat("Level 3 (+3分):", length(guide_level3), "codes\n")
+cat("Level 1 (+1 pt):", length(guide_level1), "codes\n")
+cat("Level 2 (+2 pts):", length(guide_level2), "codes\n")
+cat("Level 3 (+3 pts):", length(guide_level3), "codes\n")
 cat("Building Model Total: ", length(building_all), "codes\n")
 cat("Land Model:     ", length(guide_land),   "codes\n")
 
@@ -239,8 +239,9 @@ structural_codes <- building_tier_map %>%
 
 ### 4a. Exterior Condition & Vacancy Rate
 
-> Exterior condition 是 1–7 的有序分类变量，使用 bar chart 展示各等级空置率。
-> （Fichman feedback：violin plot 不适合有序分类变量）
+> Exterior condition is an ordered categorical variable (1–7); we use a bar
+> chart to show the vacancy rate at each level.
+> (Fichman feedback: violin plots are not appropriate for ordered categorical variables.)
 
 ```{r eda-exterior, fig.width=7, fig.height=4}
 p_ext <- ovs_df %>%
@@ -266,7 +267,7 @@ ggsave(paste0(graph_path, "exterior_condition_vacancy_rate.png"),
 
 ### 4b. OVS=1 Analysis in New Construction
 
-> Fichman feedback：为什么新建（post-2010）房产会出现在 OVS=1 中？
+> Fichman feedback: why are new-construction (post-2010) properties showing up as OVS=1?
 
 ```{r eda-new-vacant}
 new_vacant <- ovs_df %>%
@@ -294,8 +295,9 @@ bind_rows(
 
 ### 4c. Violation History vs. Vacancy (Fichman: faceted plot)
 
-> Fichman feedback：画出过去不同时间窗口内违规数量均值，按 OVS=1/0 分组对比。
-> 这是验证 life history features 有意义的核心 EDA。
+> Fichman feedback: plot the mean violation count over different historical
+> time windows, grouped by OVS=1/0. This is the core EDA for validating that
+> life-history features are meaningful.
 
 ```{r eda-violations-faceted, fig.width=10, fig.height=6}
 # Violation counts in different windows (all codes included for frequency analysis)
@@ -331,7 +333,7 @@ viol_eda_df <- ovs_df %>%
     ovs_label = if_else(ovs == 1, "OVS=1 (Vacant)", "OVS=0 (Occupied)")
   )
 
-# 按组计算均值，转长格式
+# Compute group means and pivot to long format
 viol_means <- viol_eda_df %>%
   group_by(ovs_label) %>%
   summarise(
@@ -370,15 +372,16 @@ ggsave(paste0(graph_path, "violations_faceted_by_ovs.png"),
 
 ## 5. Baseline Model (OPA Fields Only)
 
-Baseline 仅使用已在 `ovs_df` 上的 OPA 字段，不做任何额外 join。
-这是模型性能的下限，03_features.Rmd 的 engineered model 必须超越此数字。
+The baseline uses only the OPA fields already on `ovs_df` — no extra joins.
+This is the floor for model performance; the engineered model in
+03_features.Rmd must beat this AUC.
 
-| 纳入 | 理由 |
-|------|------|
-| `exterior_condition` | 评估员直接观测的物理状态 |
-| `log(market_value)` | 经济去投资信号，对数处理消除右偏 |
-| `building_age` | 由 `year_built` 推算 |
-| `log(total_livable_area)` | 建筑面积代理 |
+| Included | Rationale |
+|----------|-----------|
+| `exterior_condition` | Physical state directly observed by an assessor |
+| `log(market_value)` | Economic disinvestment signal; log normalizes right skew |
+| `building_age` | Derived from `year_built` |
+| `log(total_livable_area)` | Proxy for building floor area |
 
 ### 5a. Prepare Dataset
 
@@ -395,7 +398,7 @@ baseline_df <- ovs_df %>%
   ) %>%
   filter(!is.na(building_age))
 
-cat("Baseline 数据集:", comma(nrow(baseline_df)), "地块\n")
+cat("Baseline dataset:", comma(nrow(baseline_df)), "parcels\n")
 cat("OVS=1:", comma(sum(baseline_df$ovs == 1)),
     "(", percent(mean(baseline_df$ovs), 0.1), ")\n")
 ```
@@ -417,13 +420,13 @@ null_dev    <- baseline_model$null.deviance
 resid_dev   <- baseline_model$deviance
 
 tibble(
-  Metric = c("McFadden R²", "AUC (训练集)", "AIC", "N"),
+  Metric = c("McFadden R²", "AUC (training set)", "AIC", "N"),
   Value  = c(round(1 - resid_dev/null_dev, 3),
-             "—（见下方 ROC）",
+             "— (see ROC below)",
              round(AIC(baseline_model), 1),
              comma(nobs(baseline_model)))
 ) %>%
-  kable(caption = "Baseline 拟合统计") %>%
+  kable(caption = "Baseline fit statistics") %>%
   kable_styling(full_width = FALSE)
 
 tidy(baseline_model, exponentiate = TRUE, conf.int = TRUE) %>%
@@ -436,7 +439,7 @@ tidy(baseline_model, exponentiate = TRUE, conf.int = TRUE) %>%
 
 ### 5d. Threshold & Probability Distribution
 
-> Fichman feedback：用预测概率密度图代替单一阈值数字讨论。
+> Fichman feedback: use a predicted-probability density plot instead of discussing a single threshold number.
 
 ```{r baseline-threshold}
 pred_probs_baseline <- predict(baseline_model, type = "response")
@@ -447,7 +450,7 @@ best_baseline <- coords(roc_baseline, "best", best.method = "youden",
                         ret = c("threshold", "sensitivity", "specificity"))
 
 cat("Baseline AUC:       ", round(auc(roc_baseline), 3), "\n")
-cat("Youden 最优阈值:    ", round(best_baseline$threshold, 3), "\n")
+cat("Youden optimal threshold:", round(best_baseline$threshold, 3), "\n")
 cat("Sensitivity:        ", round(best_baseline$sensitivity, 3), "\n")
 cat("Specificity:        ", round(best_baseline$specificity, 3), "\n")
 ```
@@ -469,7 +472,7 @@ p_prob_baseline <- tibble(
   scale_x_continuous(labels = percent_format()) +
   labs(title    = "Baseline: Predicted Probability Distribution by True OVS",
        subtitle = paste0("AUC = ", round(auc(roc_baseline), 3),
-                         " | 重叠多 = 分离差；两侧分开 = 分离好"),
+                         " | high overlap = poor separation; clear separation = good"),
        x = "Predicted P(Vacant)", y = "Density", fill = NULL) +
   theme_minimal(base_size = 12) +
   theme(legend.position = "bottom")
@@ -499,7 +502,7 @@ cat("Specificity:", round(cm_b[1,1]/(cm_b[1,1]+cm_b[2,1]), 3), "\n")
 cat("Precision:  ", round(cm_b[2,2]/(cm_b[2,1]+cm_b[2,2]), 3), "\n")
 ```
 
-> **基准线：** Engineered model 必须在 AUC 上超越 `r round(auc(roc_baseline), 3)`。
+> **Baseline:** the engineered model must beat AUC = `r round(auc(roc_baseline), 3)`.
 
 ---
 
@@ -513,9 +516,9 @@ building_tier_map %>%
 tibble(code = vacancy_keyword_codes) %>%
   write_csv(paste0(out_path, "vacancy_keyword_codes.csv"))
 
-cat("已导出:\n")
-cat("  building_tier_mapping.csv —", nrow(building_tier_map), "行\n")
-cat("  vacancy_keyword_codes.csv —", length(vacancy_keyword_codes), "行\n")
+cat("Exported:\n")
+cat("  building_tier_mapping.csv —", nrow(building_tier_map), "rows\n")
+cat("  vacancy_keyword_codes.csv —", length(vacancy_keyword_codes), "rows\n")
 ```
 
 ---

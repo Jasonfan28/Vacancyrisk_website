@@ -35,11 +35,11 @@ glimpse(rtt)
 ```
 
 ```{r rtt-joinkey}
-# 确认 join key 存在且能对上 opa_properties_public
+# Confirm a join key exists and matches opa_properties_public
 properties <- read_csv(paste0(data_path, "opa_properties_public.csv"), show_col_types = FALSE) %>%
   janitor::clean_names()
 
-# 找可能的 join key
+# Find candidate join keys
 possible_keys <- names(rtt)[str_detect(tolower(names(rtt)), "opa|parcel|account")]
 cat("Possible join keys:", paste(possible_keys, collapse = ", "), "\n\n")
 
@@ -52,7 +52,7 @@ if (length(possible_keys) > 0) {
 ```
 
 ```{r rtt-dates}
-# 找日期列
+# Find date columns
 date_cols <- names(rtt)[str_detect(tolower(names(rtt)), "date")]
 cat("Date columns:", paste(date_cols, collapse = ", "), "\n\n")
 
@@ -63,7 +63,7 @@ if ("display_date" %in% names(rtt)) {
 ```
 
 ```{r rtt-doctype}
-# 文档类型分布 (deed, mortgage, sheriff sale 等)
+# Document type distribution (deed, mortgage, sheriff sale, etc.)
 if ("document_type" %in% names(rtt)) {
   rtt %>%
     count(document_type, sort = TRUE) %>%
@@ -95,7 +95,7 @@ glimpse(permits)
 ```
 
 ```{r permits-joinkey}
-# 找 join key
+# Find join key
 possible_keys_p <- names(permits)[str_detect(tolower(names(permits)), "opa|parcel|account")]
 cat("Possible join keys:", paste(possible_keys_p, collapse = ", "), "\n\n")
 
@@ -118,7 +118,7 @@ if ("permitissuedate" %in% names(permits)) {
 ```
 
 ```{r permits-type}
-# Permit type 分布 — VacancyGuide 用 demolition, new construction, plumbing 等
+# Permit type distribution — VacancyGuide uses demolition, new construction, plumbing, etc.
 if ("permittype" %in% names(permits)) {
   permits %>%
     count(permittype, sort = TRUE) %>%
@@ -128,7 +128,7 @@ if ("permittype" %in% names(permits)) {
 ```
 
 ```{r permits-status}
-# Status 分布
+# Status distribution
 if ("status" %in% names(permits)) {
   permits %>%
     count(status, sort = TRUE) %>%
@@ -138,7 +138,7 @@ if ("status" %in% names(permits)) {
 ```
 
 ```{r permits-typeofwork}
-# Type of work — VacancyGuide 用 'new construction', 'addition and/or alteration'
+# Type of work — VacancyGuide uses 'new construction', 'addition and/or alteration'
 if ("typeofwork" %in% names(permits)) {
   permits %>%
     count(typeofwork, sort = TRUE) %>%

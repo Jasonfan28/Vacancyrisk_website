@@ -168,11 +168,13 @@ cat("Parcels with demo/newcon permits:", comma(nrow(demo_permits)), "\n")
 
 ## 6. Feature Engineering
 
-### 设计原则
+### Design principles
 
-- **Track A（主线）：** 原始违规特征 + life history特征，让模型学习真实预测信号
-- **Track B（对比）：** VacancyGuide tier特征，Section 9 univariate分析决定取舍
-- 所有特征严格使用 `< TRAIN_CUTOFF` 过滤，避免时序泄漏
+- **Track A (primary):** raw violation features + life-history features — let the
+  model learn the real predictive signal.
+- **Track B (comparison):** VacancyGuide tier features — kept/dropped based on
+  the univariate analysis in Section 9.
+- All features are strictly filtered to `< TRAIN_CUTOFF` to avoid temporal leakage.
 
 ### 6a. Violation Features — Counts & Time Windows
 
@@ -558,7 +560,7 @@ opa_features <- ovs_df %>%
 
 ---
 
-## 7. 组装完整特征数据集
+## 7. Assemble the full feature dataset
 
 ```{r assemble}
 features_df <- opa_features %>%
@@ -621,14 +623,14 @@ features_df <- opa_features %>%
                                      as.integer(TRAIN_CUTOFF - as.Date("2000-01-01")))
   )
 
-cat("特征数据集:", comma(nrow(features_df)), "行 x", ncol(features_df), "列\n")
+cat("Feature dataset:", comma(nrow(features_df)), "rows x", ncol(features_df), "columns\n")
 cat("OVS=1:", comma(sum(features_df$ovs == 1, na.rm = TRUE)),
     "(", percent(mean(features_df$ovs, na.rm = TRUE), 0.1), ")\n")
 ```
 
 ---
 
-## 8. 缺失值审计
+## 8. Missing-value audit
 
 ```{r missing-audit}
 features_df %>%
@@ -646,13 +648,13 @@ features_df %>%
   arrange(desc(pct_missing)) %>%
   mutate(pct_missing = percent(pct_missing, 0.1)) %>%
   kable(col.names = c("Feature", "N Missing", "% Missing", "Flag"),
-        caption = "缺失值审计") %>%
+        caption = "Missing-value audit") %>%
   kable_styling(bootstrap_options = c("striped", "condensed"), full_width = FALSE)
 ```
 
 ---
 
-## 9. Univariate 相关性筛查
+## 9. Univariate correlation screen
 
 ```{r univariate-corr, fig.width=10, fig.height=6}
 corr_df <- features_df %>%
@@ -681,13 +683,13 @@ ggsave(paste0(graph_path, "univariate_correlation.png"),
        plot = p_corr, width = 10, height = 6, dpi = 300)
 
 corr_df %>% mutate(r = round(r, 3)) %>% select(feature, r, direction) %>%
-  kable(caption = "Top 20 特征 vs OVS 相关性") %>%
+  kable(caption = "Top 20 feature-vs-OVS correlations") %>%
   kable_styling(bootstrap_options = c("striped", "condensed"), full_width = FALSE)
 ```
 
 ---
 
-## 10. 导出
+## 10. Export
 
 ```{r export}
 features_df %>%
@@ -699,11 +701,11 @@ building_tier_map %>%
 tibble(code = vacancy_keyword_codes) %>%
   write_csv(paste0(out_path, "vacancy_keyword_codes.csv"))
 
-cat("已导出:\n")
-cat("  features_residential.csv  —", comma(nrow(features_df)), "行 x",
-    ncol(features_df), "列\n")
-cat("  building_tier_mapping.csv —", nrow(building_tier_map), "行\n")
-cat("  vacancy_keyword_codes.csv —", length(vacancy_keyword_codes), "行\n")
+cat("Exported:\n")
+cat("  features_residential.csv  —", comma(nrow(features_df)), "rows x",
+    ncol(features_df), "columns\n")
+cat("  building_tier_mapping.csv —", nrow(building_tier_map), "rows\n")
+cat("  vacancy_keyword_codes.csv —", length(vacancy_keyword_codes), "rows\n")
 ```
 
 ---

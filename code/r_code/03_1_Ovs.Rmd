@@ -86,9 +86,9 @@ cat("parcel_sf: ", comma(nrow(parcel_sf)),  "\n")
 
 ---
 
-## 2. Construct OVS（Observed Vacancy Status）
+## 2. Construct OVS (Observed Vacancy Status)
 
-Following the VacancyGuide2026 methodology, OVS=1 if any of the following are met： 
+Following the VacancyGuide2026 methodology, OVS=1 if any of the following are met:
 
 - **Source 1: Clean & Seal** — Property appears in L&I Clean & Seal records
 - **Source 2: Vacant Violations** — Has vacancy-related violation codes with status = 'OPEN'.
@@ -121,7 +121,7 @@ cs_parcels <- clean_seal %>%
   distinct(opa_account_num) %>%
   mutate(ovs_clean_seal = 1)
 
-cat("Unique Clean & Seal parcels (2yr window + demolition filter）:", comma(nrow(cs_parcels)), "\n")
+cat("Unique Clean & Seal parcels (2yr window + demolition filter):", comma(nrow(cs_parcels)), "\n")
 ```
 
 ### 2b. Source 2 — Open Vacant Violations
@@ -255,7 +255,7 @@ ovs_df %>%
   st_drop_geometry() %>%
   write_csv(paste0(out_path, "ovs_residential.csv"))
 
-cat("Exported: ovs_residential.csv —", comma(nrow(ovs_df)), "行\n")
+cat("Exported: ovs_residential.csv —", comma(nrow(ovs_df)), "rows\n")
 cat("OVS=1:", comma(sum(ovs_df$ovs == 1)),
     "(", percent(mean(ovs_df$ovs), 0.1), ")\n")
 cat("Columns:", ncol(ovs_df) - 1, "(geometry dropped)\n")
