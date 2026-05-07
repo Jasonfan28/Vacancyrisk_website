@@ -4,6 +4,21 @@ A machine learning pipeline that predicts vacant property risk across Philadelph
 
 ---
 
+## Repository Layout
+
+```
+code/r_code/        Full R Markdown pipeline. Steps 00 through 06.
+code/outputs/       Rendered HTML reports plus a handful of standalone PNGs
+                    used in early-stage EDA write-ups.
+code/03_*_files/    Auto-generated figure folders from knitting the Rmd files.
+graphs/             Headline figures used across documentation.
+graphs/python/      Modeling and validation figures. The folder name is
+                    historical — every file in it is now produced by the R
+                    pipeline.
+website/            Static dashboard, landing page, PMTiles, ward GeoJSON, and
+                    the optional local Flask backend (tileserver.py + load_db.py).
+```
+
 ## Pipeline Overview
 
 ```
@@ -15,17 +30,17 @@ A machine learning pipeline that predicts vacant property risk across Philadelph
 03_2_Analysis           tier mapping, EDA, baseline model (AUC 0.798)
 03_3_Features           full feature matrix  →  features_residential.csv
 
-── Python modeling and validation in code/python/ ───────────────────────────
+── Modeling and validation ──────────────────────────────────────────────────
 04a_tidymodeling        Logit, RF, XGBoost, LightGBM and 50 / 50 calibrated ensemble
                               →  data_py/all_predictions_rf.csv
-                              →  data_py/model_*_final.joblib
-                              →  data_py/calibrators.joblib
+                              →  data_py/model_*_final.rds
+                              →  data_py/calibrators.rds
                               →  data_py/model_thresholds.csv
           ↓
 04b_model_validation    spatial CV by ZIP group, LOGO CV, RF tree-variance CIs
 04b_vpi_comparison      per-ZIP, per-building-type, per-ward, equity by income
 04c_vs_city_vpi         head-to-head against the City Vacant Property Indicator
-04d_recalibration       held-out isotonic refit (calibrators_v2.joblib)
+04d_recalibration       held-out isotonic refit (calibrators_v2.rds)
 04e_operational_thresholds  per-ward capacity flagging, model vs VPI vs union
 04f_local_explanations  TreeSHAP on top-flagged parcels
 04g_temporal_validation evaluation by violation-recency cohort
@@ -33,22 +48,29 @@ A machine learning pipeline that predicts vacant property risk across Philadelph
           ↓
 05_output_analysis      probability summaries, ZCTA choropleth, capacity lookup
 06_tiling               PMTiles vector tilesets for web consumption
+
+── Public-facing surface (in website/) ──────────────────────────────────────
+Vacancy Risk Landing Page.html    project landing page
+PhillyStat360 v2.html             full methodology write-up
+dashboard.html                    interactive parcel-level dashboard
+*.pmtiles                         vector tilesets streamed to the browser
+tileserver.py + load_db.py        optional Flask backend backed by PostGIS
 ```
 
 ---
 
 ## Running the Pipeline
 
-The early steps (00 to 03_3) are R Markdown documents that load raw OpenDataPhilly extracts, validate quality, define the outcome variable, and engineer the feature matrix. They are run once whenever raw inputs change. They produce two flat tables that downstream Python steps consume:
+The whole pipeline is R Markdown end to end and lives in `code/r_code/`. Modeling, validation, calibration, explainability, and tiling all run in R using `tidymodels`, `ranger`, `xgboost`, `lightgbm` (via `bonsai`), `probably` for calibration, and `treeshap` for local explanations. The `data_py/` output folder name is historical — it is just where every step reads from and writes to.
+
+The early steps (00 to 03_3) load raw OpenDataPhilly extracts, validate quality, define the outcome variable, and engineer the feature matrix. They are run once whenever raw inputs change. They produce two flat tables that downstream steps consume:
 
 - `data/ovs_residential.csv`. Around 352K residential parcels with the OVS label and source flags.
 - `data/features_residential.csv`. The same parcels with around 80 engineered features.
 
-Everything from 04a onward is implemented as Python Jupyter notebooks in `code/python/`. Each notebook reads its inputs from `data/` or `data_py/`, writes outputs back to `data_py/`, and exports a self-contained HTML rendering next to the `.ipynb`. Notebooks have a strict left-to-right dependency. 04a fits the four base learners and the calibrated ensemble. 04b through 04h consume those fitted artefacts for validation. 05 produces the stakeholder-facing summaries and 06 turns the parcel GeoJSON into PMTiles.
+Each Rmd reads its inputs from `data/` or `data_py/`, writes outputs back to `data_py/`, and knits a self-contained HTML rendering next to itself. The files have a strict left-to-right dependency. 04a fits the four base learners and the calibrated ensemble. 04b through 04h consume those fitted artefacts for validation. 05 produces the stakeholder-facing summaries, and 06 turns the parcel GeoJSON into PMTiles for the website.
 
-To re-run the Python pipeline end to end, execute the notebooks in alphabetical order. Each notebook caches its expensive computations under `data_py/cache/` keyed by a SHA-1 of the feature list, so re-runs are fast as long as the feature set has not changed. Deleting `data_py/cache/` forces a clean refit.
-
-The two driver scripts `_build_04a_notebook.py` and `_build_04b_05_notebooks.py` rebuild the notebooks programmatically from a single source of truth. They are useful when you want to update many notebooks at once after a feature change without hand-editing each `.ipynb`.
+To re-run the pipeline end to end, knit the Rmd files in alphabetical order. Each step caches its expensive computations under `data_py/cache/` keyed by a SHA-1 of the feature list, so re-runs are fast as long as the feature set has not changed. Deleting `data_py/cache/` forces a clean refit.
 
 ---
 
@@ -58,7 +80,7 @@ The two driver scripts `_build_04a_notebook.py` and `_build_04b_05_notebooks.py`
 
 ### Step 1. Data Inventory and Reference
 
-**File.** [`code/00_data_inventory.Rmd`](code/00_data_inventory.Rmd)
+**File.** [`code/r_code/00_data_inventory.Rmd`](code/r_code/00_data_inventory.Rmd)
 
 This file is the reference layer for the entire project. It establishes the vocabulary, the data quality picture, and the definition of the outcome variable before any analysis begins.
 
@@ -113,7 +135,7 @@ A key finding falls out of this. Clean & Seal dominates the label. The model wil
 
 ### Step 2. New Data Quality Check
 
-**File.** [`code/00b_new_data_check.Rmd`](code/00b_new_data_check.Rmd)
+**File.** [`code/r_code/00b_new_data_check.Rmd`](code/r_code/00b_new_data_check.Rmd)
 
 #### 2.1 Real Estate Transfer records (RTT_SUMMARY)
 
@@ -136,7 +158,7 @@ Permits serve two roles in the pipeline. First, demolition permits after a Clean
 
 ### Step 3. OVS Exploratory Analysis
 
-**File.** [`code/02_ovs_exploration.Rmd`](code/02_ovs_exploration.Rmd)
+**File.** [`code/r_code/02_ovs_exploration_JF.Rmd`](code/r_code/02_ovs_exploration_JF.Rmd)
 
 #### 3.1 Construct OVS across all parcels (no residential filter)
 
@@ -187,7 +209,7 @@ Three specific parcels are selected and their full administrative history is rec
 
 ### Step 4. OVS Construction (Residential Only)
 
-**File.** [`code/03_1_Ovs.Rmd`](code/03_1_Ovs.Rmd)
+**File.** [`code/r_code/03_1_Ovs.Rmd`](code/r_code/03_1_Ovs.Rmd)
 
 This file is the single source of truth for the model's outcome variable. Every downstream file reads `ovs_residential.csv` rather than re-constructing OVS independently.
 
@@ -242,7 +264,7 @@ Geometry from `PWD_PARCELS.geojson` is joined to attach `bldg_desc` (building de
 
 ### Step 5. Violation Tier Mapping, EDA, and Baseline Model
 
-**File.** [`code/03_2_Analysis.Rmd`](code/03_2_Analysis.Rmd)
+**File.** [`code/r_code/03_2_Analysis.Rmd`](code/r_code/03_2_Analysis.Rmd)
 
 #### 5.1 Define the VacancyGuide violation tier scheme
 
@@ -308,7 +330,7 @@ The Youden-optimal threshold is found from the ROC curve. A probability density 
 
 ### Step 6. Feature Engineering
 
-**File.** [`code/03_3_Features.Rmd`](code/03_3_Features.Rmd)
+**File.** [`code/r_code/03_3_Features.Rmd`](code/r_code/03_3_Features.Rmd)
 
 This is the largest and most complex file. It transforms seven raw data sources into a single flat feature matrix. The guiding principle throughout is no temporal leakage. Every feature must be constructed from data strictly before `TRAIN_CUTOFF`.
 
@@ -466,13 +488,13 @@ Pearson correlations between each numeric feature and `ovs` are computed and the
 
 ### Step 7. Tidymodeling and the Vacancy Risk Score Ensemble
 
-**File.** [`code/python/04a_tidymodeling.ipynb`](code/python/04a_tidymodeling.ipynb)
+**File.** [`code/r_code/04a_tidymodeling.Rmd`](code/r_code/04a_tidymodeling.Rmd)
 
-This notebook is the heart of the production pipeline. It fits four base learners on the engineered feature matrix, blends two of them into a calibrated ensemble (the Vacancy Risk Score), and exports the artefacts that every downstream notebook depends on.
+This file is the heart of the production pipeline. It fits four base learners on the engineered feature matrix, blends two of them into a calibrated ensemble (the Vacancy Risk Score), and exports the artefacts that every downstream step depends on.
 
 #### 7.1 Load features and define the model variable set
 
-`features_residential.csv` is loaded directly. `model_vars` is an explicit Python list and is the single source of truth for the feature set used everywhere downstream. The exclusions listed in the table below mirror the leakage and bias decisions from the R pipeline.
+`features_residential.csv` is loaded directly. `model_vars` is an explicit character vector and is the single source of truth for the feature set used everywhere downstream. The exclusions listed in the table below capture the leakage and bias decisions made during feature engineering.
 
 | Excluded Feature | Reason |
 |---|---|
@@ -490,24 +512,25 @@ Cache files in `data_py/cache/04a/` are fingerprinted with a SHA-1 of `model_var
 
 #### 7.2 Stratified 70 / 30 train / test split
 
-```python
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.30, random_state=42, stratify=y)
+```r
+split    <- initial_split(df, prop = 0.70, strata = ovs)
+train_df <- training(split)
+test_df  <- testing(split)
 ```
 
-A temporal split was evaluated and discarded earlier in the R pipeline. Activity recency is itself a vacancy proxy via fields like `days_since_last_viol` and `cs_active_2yr`. A temporal split therefore causes distributional shift, with train OVS-equal-one rate around 0.2 percent and test rate around 6.9 percent. AUC estimates become unreliable. Stratified random split ensures both train (around 364K rows) and test (around 156K rows) have approximately the production-prevalence OVS-equal-one rate of around 1.1 percent. Temporal generalization is tested separately in step 14.
+A temporal split was evaluated and discarded earlier in the pipeline. Activity recency is itself a vacancy proxy via fields like `days_since_last_viol` and `cs_active_2yr`. A temporal split therefore causes distributional shift, with train OVS-equal-one rate around 0.2 percent and test rate around 6.9 percent. AUC estimates become unreliable. Stratified random split ensures both train (around 364K rows) and test (around 156K rows) have approximately the production-prevalence OVS-equal-one rate of around 1.1 percent. Temporal generalization is tested separately in step 14.
 
-#### 7.3 Preprocessing pipeline
+#### 7.3 Preprocessing recipe
 
-Every base learner is wrapped in a sklearn `Pipeline` with the same three steps in the same order.
+Every base learner is wrapped in a `recipes` recipe with the same three steps in the same order.
 
-1. `SimpleImputer(strategy="median")`. Imputes NAs primarily in `log_price_change`, `days_oldest_open_viol`, and `log_sale_price`.
-2. `VarianceThreshold(threshold=0)`. Removes zero-variance columns that survived feature engineering.
-3. `SMOTE(sampling_strategy=...)` from `imbalanced-learn`. Synthetic minority oversampling applied only to the training fold of each cross-validation split. The `imblearn.pipeline.Pipeline` ensures SMOTE never leaks into the test fold.
+1. `step_impute_median()`. Imputes NAs primarily in `log_price_change`, `days_oldest_open_viol`, and `log_sale_price`.
+2. `step_zv()`. Removes zero-variance columns that survived feature engineering.
+3. `themis::step_rose()`. Synthetic minority oversampling applied only to the training fold of each cross-validation split. Wrapping it in the recipe ensures the resampling step never leaks into the test fold.
 
-OVS prevalence sits at around 1.1 percent. Without correction, models tend to drive themselves toward the majority class. SMOTE rebalances the training data before the model is fit. Class-weight tuning (described below) provides a complementary lever inside the model itself.
+OVS prevalence sits at around 1.1 percent. Without correction, models tend to drive themselves toward the majority class. ROSE rebalances the training data before the model is fit. Class-weight tuning (described below) provides a complementary lever inside the model itself.
 
-![SMOTE versus no subsampling](graphs/python/rose_subsampling_comparison.png)
+![ROSE versus no subsampling](graphs/python/rose_subsampling_comparison.png)
 
 ![Train versus test density check for overfitting](graphs/python/overfit_check_density.png)
 
@@ -517,20 +540,20 @@ Each learner is fit with hyperparameters chosen up-front rather than searched on
 
 | Model | Configuration |
 |---|---|
-| Logistic Regression | L2 regularized, `class_weight="balanced"` |
-| Random Forest | `n_estimators=500`, `max_features=7`, `min_samples_leaf=5`, `class_weight="balanced"` |
+| Logistic Regression | `glm` with L2 regularization via `glmnet`, class weights inversely proportional to prevalence |
+| Random Forest | `ranger` with `num.trees = 500`, `mtry = 7`, `min.node.size = 5`, class weights set to balance |
 | XGBoost | Pre-tuned hyperparameters loaded from `xgb_tune_results.csv`, `scale_pos_weight` tuned to prevalence |
-| LightGBM | Pre-tuned hyperparameters loaded from `lgb_tune_results.csv`, `class_weight="balanced"` |
+| LightGBM | Pre-tuned hyperparameters loaded from `lgb_tune_results.csv`, class weights set to balance via `bonsai` |
 
-The Random Forest `max_features` value of seven corresponds approximately to the floor of the square root of the feature count, matching the canonical default for RF on this size of feature set.
+The Random Forest `mtry` value of seven corresponds approximately to the floor of the square root of the feature count, matching the canonical default for RF on this size of feature set.
 
 #### 7.5 The Vacancy Risk Score ensemble
 
 The production score is a 50 / 50 average of the calibrated Logit and Random Forest probabilities. XGBoost and LightGBM are kept as diagnostic comparators only. They are reported in the model thresholds table and ablation results, but do not feed the production ensemble.
 
-```python
-ensemble_prob_raw  = 0.5 * logit_prob_raw + 0.5 * rf_prob_raw
-ensemble_prob      = isotonic_ensemble.transform(ensemble_prob_raw)
+```r
+ensemble_prob_raw <- 0.5 * logit_prob_raw + 0.5 * rf_prob_raw
+ensemble_prob     <- predict(isotonic_ensemble, ensemble_prob_raw)
 ```
 
 Isotonic regression is fit on the test set predictions of the raw ensemble. Vacancy is rare. The raw probabilities cluster well below 0.5, even for parcels the model is confident about. Isotonic calibration maps the raw score back to honest empirical positive rates. Even the very top one percent of parcels is only around 59 percent truly vacant, so the highest calibrated probability is around 0.6, not 1.0.
@@ -564,11 +587,11 @@ Variable importance from the Random Forest is plotted as a top-20 bar chart. C&S
 
 | File | Contents |
 |---|---|
-| `data_py/model_logit_final.joblib` | Fitted Logistic Regression pipeline |
-| `data_py/model_rf_final.joblib` | Fitted Random Forest pipeline (around 178 MB) |
-| `data_py/model_xgb_final.joblib` | Fitted XGBoost pipeline |
-| `data_py/model_lgb_final.joblib` | Fitted LightGBM pipeline |
-| `data_py/calibrators.joblib` | Per-model isotonic calibrators plus the ensemble calibrator |
+| `data_py/model_logit_final.rds` | Fitted Logistic Regression pipeline |
+| `data_py/model_rf_final.rds` | Fitted Random Forest pipeline (around 178 MB) |
+| `data_py/model_xgb_final.rds` | Fitted XGBoost pipeline |
+| `data_py/model_lgb_final.rds` | Fitted LightGBM pipeline |
+| `data_py/calibrators.rds` | Per-model isotonic calibrators plus the ensemble calibrator |
 | `data_py/all_predictions_rf.csv` | One row per parcel (around 520K) with all model probabilities, calibrated and raw, ensemble flag, risk_score, qtile_tier |
 | `data_py/model_thresholds.csv` | Per-model Youden thresholds plus AUC, sens, spec, plus an `is_best` boolean |
 | `data_py/rf_tune_results.csv` | Cached RF tuning grid |
@@ -581,19 +604,18 @@ Variable importance from the Random Forest is plotted as a top-20 bar chart. C&S
 
 ### Step 8. Spatial Validation and Prediction Confidence Intervals
 
-**File.** [`code/python/04b_model_validation.ipynb`](code/python/04b_model_validation.ipynb)
+**File.** [`code/r_code/04b_model_validation.Rmd`](code/r_code/04b_model_validation.Rmd)
 
-This notebook tests whether the production ensemble generalizes to data it was not trained on. The motivating concern is spatial autocorrelation. Parcels in the same neighborhood share many features, including features that are themselves built from neighborhood activity. A standard random split therefore overstates AUC because the test set contains parcels whose neighbors taught the model how to score them.
+This step tests whether the production ensemble generalizes to data it was not trained on. The motivating concern is spatial autocorrelation. Parcels in the same neighborhood share many features, including features that are themselves built from neighborhood activity. A standard random split therefore overstates AUC because the test set contains parcels whose neighbors taught the model how to score them.
 
 #### 8.1 Spatial cross-validation, 10-fold by ZIP group
 
-```python
-spatial_cv = GroupKFold(n_splits=10)
-for fold, (tr, te) in enumerate(spatial_cv.split(X, y, groups=zip_code)):
-    ...
+```r
+folds <- group_vfold_cv(df, group = zip_code, v = 10)
+fits  <- map(folds$splits, ~ fit(workflow, data = analysis(.x)))
 ```
 
-`GroupKFold` ensures that all parcels in a given ZIP code stay together. Either all in training or all in test, never split across both. With ten folds, each fold holds out approximately ten percent of Philadelphia ZIPs. A parcel in 19139 cannot show up in both train fold 1 and test fold 2, so the model cannot lean on memorized neighborhood patterns.
+`group_vfold_cv` ensures that all parcels in a given ZIP code stay together. Either all in training or all in test, never split across both. With ten folds, each fold holds out approximately ten percent of Philadelphia ZIPs. A parcel in 19139 cannot show up in both train fold 1 and test fold 2, so the model cannot lean on memorized neighborhood patterns.
 
 A per-fold line chart shows AUC and J-Index across the ten folds. High variance across folds would suggest the model struggles with some geographic areas.
 
@@ -603,7 +625,7 @@ A per-fold line chart shows AUC and J-Index across the ten folds. High variance 
 
 #### 8.2 Leave-One-ZIP-Out (LOGO) cross-validation
 
-LOGO takes the spatial CV to its extreme. Each of Philadelphia's residential ZIP codes is held out exactly once across separate model fits. To keep total compute bounded, the notebook samples 15 of the roughly 45 residential ZIPs uniformly at random and fits a fresh RF for each.
+LOGO takes the spatial CV to its extreme. Each of Philadelphia's residential ZIP codes is held out exactly once across separate model fits. To keep total compute bounded, the step samples 15 of the roughly 45 residential ZIPs uniformly at random and fits a fresh RF for each.
 
 Per-ZIP AUC results are plotted as a ranked bar chart. ZIPs with AUC less than 0.70 would be highlighted in red as candidates for manual review. In the most recent run none of the sampled ZIPs fall below that line, with median AUC of 0.95 and above. The mean LOGO AUC is **0.8849**, very close to the 10-fold spatial CV result.
 
@@ -615,14 +637,13 @@ LOGO matters for deployment. If the city ever applies the model to newly annexed
 
 The Random Forest is leveraged for free uncertainty quantification by computing per-tree probabilities and taking their dispersion across the 500 estimators.
 
-```python
-tree_probs = np.column_stack([t.predict_proba(X_test)[:, 1]
-                              for t in rf.estimators_])
-rf_prob = tree_probs.mean(axis=1)
-rf_se   = tree_probs.std(axis=1) / np.sqrt(rf.n_estimators)
-ci_lower = np.clip(rf_prob - 1.96 * rf_se, 0, 1)
-ci_upper = np.clip(rf_prob + 1.96 * rf_se, 0, 1)
-ci_width = ci_upper - ci_lower
+```r
+tree_probs <- predict(rf_fit, test_df, predict.all = TRUE)$predictions[, 2, ]
+rf_prob    <- rowMeans(tree_probs)
+rf_se      <- apply(tree_probs, 1, sd) / sqrt(rf_fit$num.trees)
+ci_lower   <- pmax(0, rf_prob - 1.96 * rf_se)
+ci_upper   <- pmin(1, rf_prob + 1.96 * rf_se)
+ci_width   <- ci_upper - ci_lower
 ```
 
 A parcel with a 0.60 RF probability and a CI width of 0.05 is a confident prediction. The trees agree. A parcel with the same 0.60 probability but a CI width of 0.35 is ambiguous. Different subsets of trees give wildly different predictions, suggesting the features for this parcel are sparse or unusual.
@@ -655,9 +676,9 @@ Four checks confirm the model is learning from the right signals.
 
 ### Step 9. Subgroup Generalization and the Equity Audit
 
-**File.** [`code/python/04b_vpi_comparison.ipynb`](code/python/04b_vpi_comparison.ipynb)
+**File.** [`code/r_code/04b_vpi_comparison.Rmd`](code/r_code/04b_vpi_comparison.Rmd)
 
-This notebook breaks the citywide AUC apart along three operationally relevant axes (ZIP, building category, ward) and runs an equity audit by census-tract median household income.
+This step breaks the citywide AUC apart along three operationally relevant axes (ZIP, building category, ward) and runs an equity audit by census-tract median household income.
 
 #### 9.1 Load and assemble the parcel-level frame
 
@@ -700,7 +721,7 @@ Tier counts and observed OVS rates per tier are computed within each category. T
 
 #### 9.5 Ward-level summary
 
-Philadelphia's 66 political wards are used as an aggregation unit. For each ward the notebook reports parcel count, observed vacancy count and rate, mean predicted probability, count in Very Likely and Likely tiers, and a combined "high risk" rate (probability of 0.6 or higher). The top wards by mean predicted probability are.
+Philadelphia's 66 political wards are used as an aggregation unit. For each ward this step reports parcel count, observed vacancy count and rate, mean predicted probability, count in Very Likely and Likely tiers, and a combined "high risk" rate (probability of 0.6 or higher). The top wards by mean predicted probability are.
 
 | Ward | Mean predicted probability |
 |---|---|
@@ -716,7 +737,7 @@ Ward summaries are useful because wards are the unit many City of Philadelphia o
 
 #### 9.6 Equity audit by census-tract income quintile
 
-ACS 5-year (2022) median household income (`B19013_001E`) is joined at the census-tract level. Tracts are binned into five quintiles, with Q1 the lowest income and Q5 the highest. For each quintile the notebook reports parcel count, observed vacancy rate, mean predicted probability, and AUC. Coverage of the join is around 99.5 percent.
+ACS 5-year (2022) median household income (`B19013_001E`) is joined at the census-tract level. Tracts are binned into five quintiles, with Q1 the lowest income and Q5 the highest. For each quintile this step reports parcel count, observed vacancy rate, mean predicted probability, and AUC. Coverage of the join is around 99.5 percent.
 
 | Quintile | Observed rate | Mean predicted | AUC |
 |---|---|---|---|
@@ -738,9 +759,9 @@ The model concentrates absolute flag counts in lower-income areas because vacanc
 
 ### Step 10. Head-to-Head Comparison Against the City VPI
 
-**File.** [`code/python/04c_vs_city_vpi.ipynb`](code/python/04c_vs_city_vpi.ipynb)
+**File.** [`code/r_code/04c_vs_city_vpi.Rmd`](code/r_code/04c_vs_city_vpi.Rmd)
 
-The City of Philadelphia publishes a binary Vacant Property Indicator (VPI) on OpenDataPhilly. This notebook compares the production ensemble to that VPI head to head on the residential-only universe.
+The City of Philadelphia publishes a binary Vacant Property Indicator (VPI) on OpenDataPhilly. This step compares the production ensemble to that VPI head to head on the residential-only universe.
 
 #### 10.1 Load and align the VPI
 
@@ -795,9 +816,9 @@ A separate analysis isolates the top 339 parcels with the highest ensemble proba
 
 ### Step 11. Held-Out Recalibration
 
-**File.** [`code/python/04d_recalibration.ipynb`](code/python/04d_recalibration.ipynb)
+**File.** [`code/r_code/04d_recalibration.Rmd`](code/r_code/04d_recalibration.Rmd)
 
-The original isotonic calibrator in 04a was fit on the full test set. That is a deliberate shortcut for an initial release, but it allows a small amount of optimism into the calibrated probabilities. This notebook refits the calibrator on a held-out half of the test split and evaluates calibration on the other half.
+The original isotonic calibrator in 04a was fit on the full test set. That is a deliberate shortcut for an initial release, but it allows a small amount of optimism into the calibrated probabilities. This step refits the calibrator on a held-out half of the test split and evaluates calibration on the other half.
 
 #### 11.1 Split the test set 50 / 50
 
@@ -819,15 +840,15 @@ The reliability curves both follow the diagonal, but the recalibrated version st
 
 The practical takeaway is that the original calibrator was already nearly correct. The recommendation for production dashboards is to use `ensemble_prob_v2`, but the substantive difference is small enough that consumers already on `ensemble_prob` do not need to migrate urgently.
 
-**Outputs.** `data_py/calibrators_v2.joblib` and `data_py/predictions_calibrated.csv` (full population with the new column).
+**Outputs.** `data_py/calibrators_v2.rds` and `data_py/predictions_calibrated.csv` (full population with the new column).
 
 ---
 
 ### Step 12. Operational Thresholds and Per-Ward Capacity
 
-**File.** [`code/python/04e_operational_thresholds.ipynb`](code/python/04e_operational_thresholds.ipynb)
+**File.** [`code/r_code/04e_operational_thresholds.Rmd`](code/r_code/04e_operational_thresholds.Rmd)
 
-This notebook translates model scores into actionable inspection capacity. Rather than choose one citywide threshold, it applies a per-ward capacity policy. Inspect the top N parcels per ward, where N is some fraction of the ward's residential parcel count.
+This step translates model scores into actionable inspection capacity. Rather than choose one citywide threshold, it applies a per-ward capacity policy. Inspect the top N parcels per ward, where N is some fraction of the ward's residential parcel count.
 
 #### 12.1 The capacity policy
 
@@ -845,7 +866,7 @@ The model achieves the highest precision per parcel inspected. The union strateg
 
 #### 12.3 Per-ward precision scatter
 
-A per-ward scatter (City VPI precision on the x-axis, model precision on the y-axis) shows wide variance across wards. Some wards reach perfect or near-perfect precision under the model's flagging policy, while others land in the 0.3 to 0.5 range. The notebook flags wards where precision falls below a configurable threshold for individual review.
+A per-ward scatter (City VPI precision on the x-axis, model precision on the y-axis) shows wide variance across wards. Some wards reach perfect or near-perfect precision under the model's flagging policy, while others land in the 0.3 to 0.5 range. It flags wards where precision falls below a configurable threshold for individual review.
 
 ![Operational precision at one percent ward capacity](graphs/python/operational_precision_at_capacity.png)
 
@@ -857,21 +878,21 @@ A per-ward scatter (City VPI precision on the x-axis, model precision on the y-a
 
 ### Step 13. Local Explanations with TreeSHAP
 
-**File.** [`code/python/04f_local_explanations.ipynb`](code/python/04f_local_explanations.ipynb)
+**File.** [`code/r_code/04f_local_explanations.Rmd`](code/r_code/04f_local_explanations.Rmd)
 
 A model that is operationally useful must be explainable at the parcel level. An inspector who is told "go visit this address" must be able to ask "why this one" and get a meaningful answer.
 
 #### 13.1 Explainer setup
 
-The notebook uses `shap.TreeExplainer` on the fitted Random Forest component (which dominates the feature attribution alongside the Logistic Regression in the ensemble). For each parcel the explainer returns one SHAP value per feature.
+The R port uses `treeshap` on the fitted Random Forest component (which dominates the feature attribution alongside the Logistic Regression in the ensemble). For each parcel the explainer returns one SHAP value per feature.
 
 #### 13.2 Top 200 flagged parcels, top 5 features each
 
-The notebook ranks parcels by ensemble probability, takes the top 200, and for each parcel records the five features with the largest absolute SHAP value, along with the feature value, the SHAP magnitude, and a direction (pushed up or pushed down).
+This step ranks parcels by ensemble probability, takes the top 200, and for each parcel records the five features with the largest absolute SHAP value, along with the feature value, the SHAP magnitude, and a direction (pushed up or pushed down).
 
 #### 13.3 Global SHAP summary
 
-A bar chart of the top 15 features by mean absolute SHAP across the top 200 parcels summarizes the dominant drivers. The top of the list is.
+A bar chart of the top 15 features by mean absolute SHAP across the top 200 parcels summarises the dominant drivers. The top of the list is.
 
 - `days_since_last_cs`. Clean & Seal recency is the single largest signal. Recent C&S pushes probability up. Old C&S pushes probability down.
 - `n_cs_total`. Total Clean & Seal events.
@@ -888,9 +909,9 @@ A useful pattern that appears in the local explanations is that some neighborhoo
 
 ### Step 14. Temporal Validation
 
-**File.** [`code/python/04g_temporal_validation.ipynb`](code/python/04g_temporal_validation.ipynb)
+**File.** [`code/r_code/04g_temporal_validation.Rmd`](code/r_code/04g_temporal_validation.Rmd)
 
-The training split is stratified random rather than temporal. This is correct for measuring AUC (see step 7.2 for why), but it leaves open the question of how the model performs on parcels with very recent administrative activity versus parcels whose activity is years old. This notebook tests that question using `days_since_last_viol` as a temporal proxy.
+The training split is stratified random rather than temporal. This is correct for measuring AUC (see step 7.2 for why), but it leaves open the question of how the model performs on parcels with very recent administrative activity versus parcels whose activity is years old. This step tests that question using `days_since_last_viol` as a temporal proxy.
 
 #### 14.1 Define cohorts
 
@@ -916,15 +937,15 @@ The model's discrimination is actually higher on the new cohort, where the recen
 
 ### Step 15. Block Cross-Validation by Census Tract
 
-**File.** [`code/python/04h_block_cv_rf.ipynb`](code/python/04h_block_cv_rf.ipynb)
+**File.** [`code/r_code/04h_block_cv_rf.Rmd`](code/r_code/04h_block_cv_rf.Rmd)
 
 Several engineered features are spatially smooth. Neighborhood vacancy counts, ZIP-level aggregations, and the implicit information that a parcel near many flagged parcels is itself probably flagged. A standard random train / test split puts neighbors on opposite sides of the split, so the model effectively gets to see its training answer through its neighborhood features when scoring the test set. This inflates AUC.
 
-This notebook re-fits the Random Forest under `GroupKFold(n_splits=5, group=census_tract)`. Each fold holds out approximately 20 percent of Philadelphia's census tracts entirely. No tract appears in both train and test.
+This step re-fits the Random Forest under `group_vfold_cv(df, group = census_tract, v = 5)`. Each fold holds out approximately 20 percent of Philadelphia's census tracts entirely. No tract appears in both train and test.
 
 #### 15.1 Setup
 
-Production RF hyperparameters are loaded directly from `model_rf_final.joblib`. The same imputation and variance-threshold preprocessing is reused. SMOTE is not applied here because the goal is honest discrimination, not optimized recall.
+Production RF hyperparameters are loaded directly from `model_rf_final.rds`. The same imputation and variance-threshold preprocessing is reused. ROSE oversampling is not applied here because the goal is honest discrimination, not optimized recall.
 
 #### 15.2 Per-fold AUC
 
@@ -950,9 +971,9 @@ The 04h estimate of around 0.97 is the right number to put on a stakeholder slid
 
 ### Step 16. Output Analysis and Stakeholder Summaries
 
-**File.** [`code/python/05_output_analysis.ipynb`](code/python/05_output_analysis.ipynb)
+**File.** [`code/r_code/05_output_analysis.Rmd`](code/r_code/05_output_analysis.Rmd)
 
-This notebook turns the production predictions into the materials a stakeholder needs in order to look at the city as a whole and ask sensible questions. Distributions by category and ZIP, a calibration scatter, a choropleth map, an interactive Leaflet map, and a capacity-based threshold lookup table.
+This step turns the production predictions into the materials a stakeholder needs in order to look at the city as a whole and ask sensible questions. Distributions by category and ZIP, a calibration scatter, a choropleth map, an interactive Leaflet map, and a capacity-based threshold lookup table.
 
 #### 16.1 Load and join predictions, features, and category metadata
 
@@ -962,7 +983,7 @@ The overall share of parcels with `rf_prob` greater than zero is reported. About
 
 #### 16.2 Category summary table
 
-For each OPA `category_code_description` the notebook reports parcel count, number observed vacant, observed vacancy rate, and the mean and median predicted probability. Mixed Use carries the highest mean predicted probability at around 2.73 percent. Single Family carries the lowest at around 1.20 percent. Both mean and median are reported because the distribution is right-skewed. A few high-risk parcels pull the mean up, and the median reflects the typical parcel.
+For each OPA `category_code_description` this step reports parcel count, number observed vacant, observed vacancy rate, and the mean and median predicted probability. Mixed Use carries the highest mean predicted probability at around 2.73 percent. Single Family carries the lowest at around 1.20 percent. Both mean and median are reported because the distribution is right-skewed. A few high-risk parcels pull the mean up, and the median reflects the typical parcel.
 
 #### 16.3 Probability density by category, non-zero predictions only
 
@@ -999,19 +1020,19 @@ Mean predicted probability and observed OVS rate are computed per ZIP and ranked
 
 #### 16.7 ZCTA choropleth and interactive Leaflet map
 
-`pygris.zctas(starts_with="191")` downloads US Census ZCTA boundaries for Philadelphia ZIPs (a few MB). These are joined to the ZIP-level summary and rendered as a static choropleth, plus an interactive Folium map with hover highlighting and click popups showing ZIP, mean P(vacant), parcel count, and observed vacancy rate.
+`tigris::zctas(starts_with = "191")` downloads US Census ZCTA boundaries for Philadelphia ZIPs (a few MB). These are joined to the ZIP-level summary and rendered as a static choropleth, plus an interactive Leaflet map with hover highlighting and click popups showing ZIP, mean P(vacant), parcel count, and observed vacancy rate.
 
-ZCTA boundaries are used rather than `PWD_PARCELS.geojson` for the static map because the parcel file is over 400 MB and consistently causes notebooks to run out of memory or render at unusable resolutions. The parcel-resolution map lives separately in step 17 as a vector tileset that the browser handles efficiently.
+ZCTA boundaries are used rather than `PWD_PARCELS.geojson` for the static map because the parcel file is over 400 MB and consistently causes the R session to run out of memory or render at unusable resolutions. The parcel-resolution map lives separately in step 17 as a vector tileset that the browser handles efficiently.
 
 ![ZCTA choropleth of mean P(vacant)](graphs/python/spatial_zip_choropleth.png)
 
 #### 16.8 Capacity-based threshold lookup
 
-A precision-recall curve is computed across probability thresholds from 0.01 to 0.99 and each row is annotated with the corresponding number of parcels flagged. Common inspection volumes (100, 250, 500, 1,000, 2,000, 5,000, 10,000) are then read off the curve as a lookup table. To flag 5,000 parcels the notebook reports a threshold of around 0.67 with around 78 percent precision and around 67 percent recall. Operations teams can pick a row based on actual resourcing rather than commit to a fixed citywide threshold.
+A precision-recall curve is computed across probability thresholds from 0.01 to 0.99 and each row is annotated with the corresponding number of parcels flagged. Common inspection volumes (100, 250, 500, 1,000, 2,000, 5,000, 10,000) are then read off the curve as a lookup table. To flag 5,000 parcels the table reports a threshold of around 0.67 with around 78 percent precision and around 67 percent recall. Operations teams can pick a row based on actual resourcing rather than commit to a fixed citywide threshold.
 
 #### 16.9 Optional GeoJSON exports
 
-When `PWD_PARCELS.geojson` is available, the notebook writes two GeoJSON files for downstream use.
+When `PWD_PARCELS.geojson` is available, this step writes two GeoJSON files for downstream use.
 
 - `data_py/vacancy_predictions.geojson`. Around 436K parcels, around 405 MB. All prediction columns plus all feature metadata.
 - `data_py/vacancy_predictions_flagged.geojson`. Around 4,500 parcels (top one percent flagged), around 3.9 MB. Same column set, smaller geometry.
@@ -1022,13 +1043,13 @@ When `PWD_PARCELS.geojson` is available, the notebook writes two GeoJSON files f
 
 ### Step 17. Vector Tilesets for Web Consumption
 
-**File.** [`code/python/06_tiling.ipynb`](code/python/06_tiling.ipynb)
+**File.** [`code/r_code/06_tiling.Rmd`](code/r_code/06_tiling.Rmd)
 
-The 405 MB GeoJSON from step 16 is unusable in a browser as is. This notebook converts both GeoJSON exports into PMTiles, a single-file vector tileset format that the browser can stream from static storage (S3, GCS, GitHub Pages) and consume directly via MapLibre GL JS or Mapbox GL JS without a tile server.
+The 405 MB GeoJSON from step 16 is unusable in a browser as is. This step converts both GeoJSON exports into PMTiles, a single-file vector tileset format that the browser can stream from static storage (S3, GCS, GitHub Pages) and consume directly via MapLibre GL JS or Mapbox GL JS without a tile server.
 
 #### 17.1 Toolchain
 
-`tippecanoe` (version 2.80, Felt fork) is the converter. It is invoked via subprocess from inside the notebook. The Felt fork is required for the PMTiles output format. The vanilla tippecanoe binary writes mbtiles only.
+`tippecanoe` (version 2.80, Felt fork) is the converter. It is invoked via `system2()` from inside the Rmd. The Felt fork is required for the PMTiles output format. The vanilla tippecanoe binary writes mbtiles only.
 
 #### 17.2 Flagged tileset
 
@@ -1036,7 +1057,7 @@ The 405 MB GeoJSON from step 16 is unusable in a browser as is. This notebook co
 
 #### 17.3 Full prediction tileset
 
-`vacancy_predictions.pmtiles` covers all roughly 436K parcels. Zoom 10 to 15. The layer name inside the tileset is `parcels`. The notebook applies a 10 unit simplification at low zooms and drops the densest features when tile size exceeds the limit. Final file size is around 46 MB.
+`vacancy_predictions.pmtiles` covers all roughly 436K parcels. Zoom 10 to 15. The layer name inside the tileset is `parcels`. The pipeline applies a 10 unit simplification at low zooms and drops the densest features when tile size exceeds the limit. Final file size is around 46 MB.
 
 Both tilesets carry the full feature property bag including `risk_score`, `ensemble_prob`, `qtile_tier`, `zip`, `tract`, `ward`, `address`, and `ovs`. Client-side styling and filtering are therefore possible without round-tripping to a server. A consumer can color by risk score, filter to flagged only, search by ZIP, or drill into a single parcel popup, all in the browser.
 
@@ -1088,7 +1109,7 @@ The most defensible number to cite for the model's generalization performance is
 | No assessed value features | `log_market_value` and `value_per_sqft` excluded | OPA assessed values have documented racial and geographic bias |
 | Production score is calibrated ensemble | 50 / 50 Logit and RF, isotonic at the end | Logit and RF capture different signal shape. Equal weighting beat tuned weighting in cross-validation. Isotonic restores honest empirical positive rates |
 | No fixed binary threshold | Top one percent rank flag plus five-tier rank bucket | Calibrated probabilities are all small because vacancy is rare. A fixed 0.5 threshold flags almost nothing. Use rank or capacity instead |
-| ZCTA boundaries for static maps | `pygris` package | `PWD_PARCELS.geojson` is over 400 MB. ZCTA is practical for rendering and presentations. Parcel-resolution lives in PMTiles |
+| ZCTA boundaries for static maps | `tigris` package | `PWD_PARCELS.geojson` is over 400 MB. ZCTA is practical for rendering and presentations. Parcel-resolution lives in PMTiles |
 | Per-ward capacity flagging | One percent of each ward's residential parcels | Single citywide threshold concentrates too many flags in a few neighborhoods. Per-ward keeps the inspection load sensible everywhere |
 | 04b mirrors 04a exactly | Identical model_vars, recipe, hyperparameters | Spatial CV and LOGO CV must evaluate the same model that is deployed. Divergence would produce misleading validation metrics |
 | No poverty rate in model | ACS variables removed from model_vars | Used only in the equity audits as an analysis dimension, not a feature. Avoids an external Census API dependency at training time |
@@ -1101,12 +1122,12 @@ The following are the artefacts that downstream consumers (dashboards, GIS layer
 
 #### Production model artefacts (in `data_py/`)
 
-- `model_logit_final.joblib`. Fitted Logistic Regression pipeline.
-- `model_rf_final.joblib`. Fitted Random Forest pipeline.
-- `model_xgb_final.joblib`. Fitted XGBoost pipeline. Diagnostic comparator.
-- `model_lgb_final.joblib`. Fitted LightGBM pipeline. Diagnostic comparator.
-- `calibrators.joblib`. Original isotonic calibrators for each model and the ensemble.
-- `calibrators_v2.joblib`. Held-out recalibrated ensemble calibrator. Recommended for production going forward.
+- `model_logit_final.rds`. Fitted Logistic Regression pipeline.
+- `model_rf_final.rds`. Fitted Random Forest pipeline.
+- `model_xgb_final.rds`. Fitted XGBoost pipeline. Diagnostic comparator.
+- `model_lgb_final.rds`. Fitted LightGBM pipeline. Diagnostic comparator.
+- `calibrators.rds`. Original isotonic calibrators for each model and the ensemble.
+- `calibrators_v2.rds`. Held-out recalibrated ensemble calibrator. Recommended for production going forward.
 - `model_thresholds.csv`. Per-model Youden thresholds plus AUC, sensitivity, specificity, and `is_best`.
 
 #### Parcel-level prediction frames
@@ -1150,6 +1171,71 @@ The following are the artefacts that downstream consumers (dashboards, GIS layer
 - `tiles/vacancy_predictions.pmtiles`. Around 46 MB. Full citywide.
 - `vs_city_vpi_map.html`. Interactive bucket overlay.
 - `vs_city_vpi_high_prob_ovs0_map.html`. Candidate-review map for high-probability OVS-equal-zero parcels.
+
+---
+
+## Website and Dashboard
+
+Everything that gets handed to a non-technical audience lives in [`website/`](website/). The folder is fully static, ships with a graceful fallback for the Flask backend, and is designed to be pushed to GitHub Pages or any static host without modification.
+
+### Public-facing pages
+
+| File | Purpose |
+|---|---|
+| [`website/index.html`](website/index.html) | Tiny redirect that drops visitors onto the landing page |
+| [`website/Vacancy Risk Landing Page.html`](website/Vacancy%20Risk%20Landing%20Page.html) | Project landing page. The "what this is and why it matters" surface for stakeholders |
+| [`website/PhillyStat360 v2.html`](website/PhillyStat360%20v2.html) | Full methodology write-up. Mirrors the step-by-step structure of this README in a presentation-ready layout |
+| [`website/dashboard.html`](website/dashboard.html) | Interactive parcel-level dashboard. MapLibre + PMTiles vector parcels, SHAP risk drivers per parcel, ward choropleth, sidebar summary cards, ward filter, and parcel search |
+
+### Data shipped with the dashboard
+
+The dashboard needs a small set of static files alongside the HTML. Each file is the direct output of a pipeline step.
+
+| File | Source step | Purpose |
+|---|---|---|
+| `vacancy_predictions.pmtiles` (~46 MB) | Step 17 | Full citywide parcel tileset, layer name `parcels` |
+| `vacancy_flagged.pmtiles` (~2.2 MB) | Step 17 | Top one percent flagged parcels, layer name `flagged` |
+| `vacancy_predictions_flagged.geojson` (~3.9 MB) | Step 16 | Flagged parcels as GeoJSON for the SHAP table backend |
+| `ward_boundaries.geojson` | Step 16 | Polygon geometry for the 66 political wards |
+| `ward_stats.json` | Step 16 | Per-ward rollups used to power the choropleth, summary cards, and ward filter list in static mode |
+| `dashboard_shap.json` | Step 13 | Per-parcel SHAP risk drivers for the dashboard's "why this parcel" panel |
+| `colors_and_type.css` | — | Shared colour palette and type scale across landing page, methodology, and dashboard |
+
+### Static vs. local-server mode
+
+`dashboard.html` auto-detects the host. On `localhost` or `127.0.0.1` it tries the local Flask backend first ([`website/tileserver.py`](website/tileserver.py), backed by PostgreSQL/PostGIS via [`website/load_db.py`](website/load_db.py)). On any other host it skips the backend entirely and falls back to the JSON files above.
+
+| Feature | Local-server mode | Static mode |
+|---|---|---|
+| Map basemap and PMTiles | CARTO basemap, vector parcels from `vacancy_predictions.pmtiles` | Same |
+| Parcel popups (click) | Full property bag from PMTiles | Full property bag from PMTiles |
+| SHAP risk drivers | `dashboard_shap.json` | `dashboard_shap.json` |
+| Ward choropleth | `ward_stats.json` plus `ward_boundaries.geojson` | Same |
+| Sidebar summary cards | `/summary` endpoint | Aggregated from `ward_stats.json` |
+| Ward filter list | `/wards` endpoint | From `ward_stats.json` |
+| Ward fly-to | `/ward_bounds` endpoint | Computed client-side from the ward boundary GeoJSON |
+| Parcel search | DB-wide search via `/search` | Limited to parcels currently rendered in view (`queryRenderedFeatures`) |
+| Census tract filter | `/census_tracts` and `/tract_bounds` | Disabled unless `census_tracts.json` is shipped |
+
+The local Flask backend is optional. It exists for the case where the city wants DB-wide parcel search and tract-level filtering on a workstation. Everything in the public deployment is static.
+
+### Deployment
+
+Full GitHub Pages deployment notes live in [`website/DEPLOY.md`](website/DEPLOY.md). The short version is:
+
+```bash
+cd website
+git init -b main
+git add .gitignore .nojekyll .
+git commit -m "Initial commit"
+git remote add origin git@github.com:<you>/<repo>.git
+git push -u origin main
+# Settings → Pages → Source: Deploy from a branch, main / (root)
+```
+
+The two PMTiles files stay in the repo as ordinary objects rather than Git LFS, because GitHub Pages does not serve LFS objects through its CDN. The largest file (`vacancy_predictions.pmtiles`, around 46 MB) sits comfortably under GitHub's 100 MB per-file limit. To host the tilesets on S3, Cloudflare R2, or any other static bucket instead, set the `PMTILES_URL` constant at the top of the `<script>` block in `dashboard.html` to the absolute URL — the PMTiles JS reader will stream byte ranges over HTTP.
+
+[`website/sync_methodology_assets.sh`](website/sync_methodology_assets.sh) copies the latest figures from `graphs/` and `code/outputs/` into the methodology page so the public write-up stays in sync with the modeling pipeline.
 
 ---
 
