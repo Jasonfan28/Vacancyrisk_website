@@ -615,7 +615,7 @@ footer {
 .pull-stat-value {
   font-family: var(--font-head);
   font-weight: 800;
-  font-size: 64px;
+  font-size: 30px;
   color: var(--blue-dark);
   line-height: 1;
   letter-spacing: -2px;
@@ -943,7 +943,7 @@ footer {
       </div>
     </div>
     <div class="metric-item">
-      <div class="metric-value">~520k</div>
+      <div class="metric-value">~436k</div>
       <div class="metric-label">
         <strong>Parcels scored</strong>
         Every residential parcel in Philadelphia receives a calibrated probability score
@@ -959,40 +959,27 @@ footer {
     <h2 class="section-title" id="story-title">Philadelphia has a vacancy problem. The records don't show all of it.</h2>
     <div class="story-grid">
       <div class="story-prose">
-        <p>
-          Vacant properties are one of the most visible signs of disinvestment in a neighborhood. They attract illegal dumping, reduce property values for surrounding owners, create fire hazards, and signal to residents that a block is being left behind. Philadelphia has a lot of them.
-        </p>
-        <p>
-          But the city's official vacancy count — compiled from Licenses &amp; Inspections records, utility shutoffs, and 311 complaints — has a known gap. <strong>Many properties that are functionally vacant never make it into the administrative record.</strong> An owner may be paying water bills on a property no one lives in. A building may sit empty for years before a neighbor files a complaint. The data reflects enforcement history, not ground truth.
-        </p>
-        <p>
-          That gap matters for two reasons. First, L&amp;I can't inspect what it doesn't know about. Second, community development organizations, housing courts, and city planners making decisions about where to invest resources are working from an incomplete picture.
-        </p>
-        <p>
-          This model was built to close part of that gap. By combining dozens of signals — water usage patterns, utility accounts, tax delinquency, 311 complaint history, building permit activity, parcel characteristics — it produces a probability score for every residential parcel in the city. <strong>The higher the score, the more a property looks like other properties that turned out to be vacant.</strong>
-        </p>
-        <p>
-          The goal isn't to automate enforcement. It's to give the people doing the work a smarter starting point — a prioritized list of addresses worth a second look, grounded in data rather than chance or proximity to the last complaint.
-        </p>
+        <p>Vacant properties are one of the most visible signs of disinvestment in a neighborhood. They attract illegal dumping, reduce property values for surrounding owners, create fire hazards, and signal to residents that a block is being left behind.</p>
+        <p>The city's official vacancy count, the Vacant Property Indicator, is compiled from Licenses and Inspections records, and it has a known gap. A building can sit empty for years before an inspector flags it or a neighbor files a complaint. The data reflects enforcement history, not ground truth.</p>
+        <p>That gap matters, because L&amp;I can't inspect what it doesn't know about. Community development organizations, housing courts, and city planners deciding where to direct resources end up working from an incomplete picture.</p>
+        <p>This model was built to close part of that gap. It combines dozens of signals from public administrative data: code violation history, clean and seal actions, unsafe and imminently dangerous orders, business license records, building permits, parcel characteristics from OPA, and deed transfer history. The result is a probability score for every residential parcel in the city, and higher scores mean a property looks more like other properties that turned out to be vacant.</p>
+        <p>The goal is not to have a final determination of vacancy, not a lien or seizure trigger, and not a substitute for field judgement. It's to give the people doing the work a calibrated starting point, a prioritized list of addresses worth a second look based on data rather than chance or proximity to the last complaint.</p>
       </div>
 
       <div>
         <div class="pull-stat">
-          <div class="pull-stat-value">40k+</div>
-          <div class="pull-stat-label">Residential properties in Philadelphia estimated to be vacant or abandoned</div>
-          <div class="pull-stat-source">Penn Institute for Urban Research · 2023 estimate</div>
+          <div class="pull-stat-value">Why records undercount? </div>
         </div>
 
         <div class="sidebar-callout" role="note">
-          <div class="sidebar-callout-label">Why records undercount</div>
           <div class="sidebar-callout-text">
-            Administrative vacancy data is a byproduct of enforcement — it reflects where inspectors have been, not where vacancies exist. <strong>Properties with absentee owners, paid-forward utilities, or no active neighbors are systematically underrepresented.</strong>
+            Administrative vacancy data is a byproduct of enforcement, reflecting where inspectors have been, not where vacancies exist. <strong>Properties with absentee owners, paid-forward utilities, or no active neighbors are systematically underrepresented.</strong>
           </div>
         </div>
 
         <ul class="sidebar-fact-list" aria-label="Key data facts">
           <li class="sidebar-fact">
-            <span class="sidebar-fact-value">36+</span>
+            <span class="sidebar-fact-value">34</span>
             <span class="sidebar-fact-desc">Data features used to train the model, across 6 administrative source systems</span>
           </li>
           <li class="sidebar-fact">
@@ -1018,22 +1005,22 @@ footer {
       <div class="step">
         <div class="step-num">1</div>
         <div class="step-title">Data assembly</div>
-        <div class="step-desc">Six city data systems — L&amp;I, OPA, USPS, water utility, 311, and permits — are joined at the parcel level. Each of Philadelphia's ~520,000 residential parcels gets a row.</div>
+        <div class="step-desc">Six city datasets (Violations, Real Estate Transfer, OPA Properties, Spatial Lag, Clean &amp; Seal, and Business Licenses) are joined at the parcel level.</div>
       </div>
       <div class="step">
         <div class="step-num">2</div>
         <div class="step-title">Feature engineering</div>
-        <div class="step-desc">Raw fields are transformed into 36+ predictive signals: utility usage trends, permit gaps, complaint frequency, tax delinquency status, structural age, and more.</div>
+        <div class="step-desc">Raw fields are transformed into 34 predictive signals.</div>
       </div>
       <div class="step">
         <div class="step-num">3</div>
         <div class="step-title">Model training</div>
-        <div class="step-desc">A gradient-boosted classifier is trained on confirmed-vacant properties from L&amp;I records. Spatial cross-validation across Philadelphia's districts prevents overfitting to dense-data areas.</div>
+        <div class="step-desc">The pipeline trains four base learners (logistic regression, random forest, XGBoost, and LightGBM) on 34 features across 352K residential parcels, then blends the calibrated logistic regression and random forest into a 50/50 ensemble validated by ZIP- and tract-grouped spatial cross-validation.</div>
       </div>
       <div class="step">
         <div class="step-num">4</div>
         <div class="step-title">Probability scoring</div>
-        <div class="step-desc">Every parcel receives a calibrated probability score (0–1). Scores are published to the dashboard and refreshed when new source data is available. High-risk parcels surface to the top.</div>
+        <div class="step-desc">The ensemble outputs a calibrated probability of vacancy for every residential parcel, expressed as a 0 to 100 risk score, a top-one-percent flag, and a five-tier rank bucket for dashboard display.</div>
       </div>
     </div>
   </div>
@@ -1059,8 +1046,8 @@ footer {
             An interactive map and table showing predicted vacancy risk scores for every residential parcel in Philadelphia. Filter by neighborhood, risk tier, or parcel type.
           </p>
           <ul class="del-card-features">
-            <li>Parcel-level risk scores mapped across all 521 Census tracts</li>
-            <li>Filter by risk tier: high, moderate, low</li>
+            <li>Parcel-level risk scores mapped across Philadelphia</li>
+            <li>Filter by risk tier</li>
             <li>Overlay with existing L&amp;I vacancy designations</li>
             <li>Export filtered results as CSV</li>
           </ul>
@@ -1078,10 +1065,10 @@ footer {
             A full account of how the model was built: data sources, feature engineering, training approach, validation strategy, equity audit, and known limitations.
           </p>
           <ul class="del-card-features">
-            <li>Data sources: L&amp;I, OPA, USPS, 311, water utility</li>
-            <li>Gradient boosted model with calibrated probabilities</li>
+            <li>Data sources: L&amp;I, OPA, Revenue</li>
+            <li>Ensemble model with calibrated probabilities</li>
             <li>Spatial cross-validation across Philadelphia districts</li>
-            <li>Equity audit by race and income quartile</li>
+            <li>Equity audit by income quartile</li>
           </ul>
           <span class="del-card-action">Read the report</span>
         </div>
